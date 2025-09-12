@@ -1,0 +1,1 @@
+ALTER TABLE "problem_entity" ALTER COLUMN "updated_at" SET DEFAULT now();
