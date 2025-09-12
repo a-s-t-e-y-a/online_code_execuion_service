@@ -1,0 +1,69 @@
+/**
+ * {{description}}
+ * 
+ * Complete solution with all test cases for execution
+ */
+
+{{user_code}}
+
+// Public test cases
+const publicTestCases = {{{public_test_cases}}};
+
+// Private test cases (hidden from user)
+const privateTestCases = {{{private_test_cases}}};
+
+// Combine all test cases for execution
+const allTestCases = [...publicTestCases, ...privateTestCases];
+
+// Test execution function
+function executeTests() {
+    const results = {
+        total: allTestCases.length,
+        passed: 0,
+        failed: 0,
+        errors: 0,
+        details: []
+    };
+    
+    allTestCases.forEach((testCase, index) => {
+        const testResult = {
+            index: index + 1,
+            description: testCase.description || `Test case ${index + 1}`,
+            status: 'failed',
+            expected: testCase.expected,
+            actual: null,
+            error: null,
+            isPublic: index < publicTestCases.length
+        };
+        
+        try {
+            const result = {{function_name}}(...testCase.input);
+            testResult.actual = result;
+            
+            if (JSON.stringify(result) === JSON.stringify(testCase.expected)) {
+                testResult.status = 'passed';
+                results.passed++;
+            } else {
+                testResult.status = 'failed';
+                results.failed++;
+            }
+        } catch (error) {
+            testResult.status = 'error';
+            testResult.error = error.message;
+            results.errors++;
+        }
+        
+        results.details.push(testResult);
+    });
+    
+    return results;
+}
+
+// Execute and return results
+const testResults = executeTests();
+console.log(JSON.stringify(testResults, null, 2));
+
+// Export for external use
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = { {{function_name}}, executeTests, testResults };
+}

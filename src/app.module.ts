@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { DrizzleModule } from './drizzle/drizzle.module';
 import { ProblemModule } from './problem/problem.module';
 import { BucketsModule } from './buckets/buckets.module';
+import { TemplateServerCumMiddlewareModule } from './template_server_cum_middleware/template_server_cum_middleware.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { BucketsModule } from './buckets/buckets.module';
     DrizzleModule,
     ProblemModule,
     BucketsModule,
+    TemplateServerCumMiddlewareModule,
   ],
   controllers: [AppController],
   providers: [AppService],

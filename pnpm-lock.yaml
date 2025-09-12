@@ -38,6 +38,9 @@ importers:
       '@types/cookie-parser':
         specifier: ^1.4.9
         version: 1.4.9(@types/express@5.0.3)
+      '@types/handlebars':
+        specifier: ^4.1.0
+        version: 4.1.0
       '@types/multer':
         specifier: ^2.0.0
         version: 2.0.0
@@ -56,6 +59,9 @@ importers:
       drizzle-orm:
         specifier: ^0.44.5
         version: 0.44.5(@libsql/client@0.14.0)(@types/pg@8.15.5)(better-sqlite3@11.10.0)(pg@8.16.3)
+      handlebars:
+        specifier: ^4.7.8
+        version: 4.7.8
       multer:
         specifier: ^2.0.2
         version: 2.0.2
@@ -1675,6 +1681,10 @@ packages:
 
   '@types/express@5.0.3':
     resolution: {integrity: sha512-wGA0NX93b19/dZC1J18tKWVIYWyyF2ZjT9vin/NRu0qzzvfVzWjs04iq2rQ3H65vCTQYlRqs3YHfY7zjdV+9Kw==}
+
+  '@types/handlebars@4.1.0':
+    resolution: {integrity: sha512-gq9YweFKNNB1uFK71eRqsd4niVkXrxHugqWFQkeLRJvGjnxsLr16bYtcsG4tOFwmYi0Bax+wCkbf1reUfdl4kA==}
+    deprecated: This is a stub types definition. handlebars provides its own type definitions, so you do not need this installed.
 
   '@types/http-errors@2.0.5':
     resolution: {integrity: sha512-r8Tayk8HJnX0FztbZN7oVqGccWgw98T/0neJphO91KkmOzug1KkofZURD4UaD5uH8AqcFLfdPErnBod0u71/qg==}
@@ -6626,6 +6636,10 @@ snapshots:
       '@types/body-parser': 1.19.6
       '@types/express-serve-static-core': 5.0.7
       '@types/serve-static': 1.15.8
+
+  '@types/handlebars@4.1.0':
+    dependencies:
+      handlebars: 4.7.8
 
   '@types/http-errors@2.0.5': {}
 
