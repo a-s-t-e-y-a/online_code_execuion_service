@@ -11,6 +11,7 @@ import KeyvRedis, { Keyv } from '@keyv/redis';
 import { CacheableMemory } from 'cacheable';
 import { BullModule } from '@nestjs/bullmq';
 import { JobSchedulingModule } from './job_scheduling/job_scheduling.module';
+import { SolutionExecutionModule } from './solution_execution/solution_execution.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -29,22 +30,20 @@ import { JobSchedulingModule } from './job_scheduling/job_scheduling.module';
         };
       },
     }),
-    BullModule.forRoot({
+   BullModule.forRoot({
       connection: {
         host: 'localhost',
         port: 6379,
       },
-    }),
-    BullModule.registerQueue({
-      name: 'code-execution',
     }),
     DrizzleModule,
     ProblemModule,
     BucketsModule,
     TemplateServerCumMiddlewareModule,
     JobSchedulingModule,
+    SolutionExecutionModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
