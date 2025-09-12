@@ -7,15 +7,3 @@ function {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unl
     // Write your solution here
     
 }
-
-// Test cases
-const testCases = {{{public_test_cases}}};
-
-// Run tests
-testCases.forEach((testCase, index) => {
-    const result = {{function_name}}(...testCase.input);
-    assert.deepStrictEqual(result, testCase.expectedOutput, `Test ${index + 1} failed`);
-    console.log(`✅ Test ${index + 1} passed`);
-});
-
-console.log('All tests passed!');

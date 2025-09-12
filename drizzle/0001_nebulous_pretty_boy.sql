@@ -1,0 +1,1 @@
+ALTER TABLE "problem_entity" ADD COLUMN "bolier_plate_code" text DEFAULT '' NOT NULL;

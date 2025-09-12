@@ -44,10 +44,6 @@ export class TemplateServerCumMiddlewareService {
   async generateTemplate(id: number): Promise<{ filename: string; content: string }> {
 
     const problem = await this.findOne(id);
-    let publicTestCases: any[] = [];
-    if (problem.public_test_cases) {
-      publicTestCases = await this.fetchJsonFromUrl(problem.public_test_cases);
-    }
     const templatePath = path.join(process.cwd(), 'src', 'templates', 'javascript', 'solution.hbs');
     const templateContent = fs.readFileSync(templatePath, 'utf-8');
     const template = handlebars.compile(templateContent);
@@ -55,9 +51,9 @@ export class TemplateServerCumMiddlewareService {
       description: problem.description,
       function_name: problem.function_name,
       parameters: problem.parameters,
-      public_test_cases: JSON.stringify(publicTestCases, null, 2)
     };
     const generatedCode = template(templateData);
+    console.log(generatedCode);
     const filename = `${problem.function_name}_solution.js`;
     return {
       filename,

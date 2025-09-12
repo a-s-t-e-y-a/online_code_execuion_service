@@ -20,6 +20,7 @@ export const problem_entity = pgTable('problem_entity', {
     parameters: jsonb('parameters').$type<Parameter[]>().default([]),
     public_test_cases: text('public_test_cases').notNull(),
     private_test_cases: text('private_test_cases').notNull(),
+    boiler_plate_code: text('bolier_plate_code').notNull().default(''),
     ...common_entity
 });
 

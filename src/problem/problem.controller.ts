@@ -10,13 +10,14 @@ import { FileRemovalInterceptor } from 'src/buckets/file.removal.interceptor';
 import { BucketService } from 'src/buckets/buckets.service';
 import { responseInterface } from 'src/database/return.interface';
 import { BucketUploads, BucketUploadsType } from 'src/buckets/decorators/bucket-upload.decorator';
-import { param } from 'drizzle-orm';
 
 
 @Controller('problem')
 @ApiTags('Contracts')
 export class ProblemController {
-  constructor(private readonly problemService: ProblemService) { }
+  constructor(
+    private readonly problemService: ProblemService,
+  ) { }
 
   @Post()
   @UseInterceptors(
@@ -33,7 +34,7 @@ export class ProblemController {
     @Body() createProblemDto: CreateProblemDto,
     @BucketUploads() uploads?: { public_test_cases?: BucketUploadsType[], private_test_cases?: BucketUploadsType[] }
   ): Promise<responseInterface> {
-    console.log(uploads)
+    this.problemService.checkUploads(uploads);
     const data = await this.problemService.create({ createProblemDto, uploads });
     return {
       message: 'Problem created successfully',

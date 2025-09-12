@@ -6,10 +6,10 @@ CREATE TABLE "problem_entity" (
 	"difficulty" "difficulty" NOT NULL,
 	"function_name" text NOT NULL,
 	"parameters_number" text NOT NULL,
-	"parameters" jsonb NOT NULL,
+	"parameters" jsonb DEFAULT '[]'::jsonb,
 	"public_test_cases" text NOT NULL,
 	"private_test_cases" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp,
+	"updated_at" timestamp DEFAULT now(),
 	"deleted_at" timestamp
 );

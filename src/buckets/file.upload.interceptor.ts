@@ -20,7 +20,6 @@ export class FileUploadInterceptor implements NestInterceptor {
     next: CallHandler,
   ): Promise<Observable<any>> {
     const request: any = context.switchToHttp().getRequest();
-    this.logger.log('Intercepting file upload', JSON.stringify({ files: request.files, file: request.file }));
     if (request.file) {
       const meta = await this.bucketService.upload(request.file);
       request.bucket_uploads = meta;

@@ -1,5 +1,5 @@
 {
-  "id": "20663e0c-151b-4978-9409-2fca1dcad437",
+  "id": "f41fe51f-9666-4d84-96b8-2273a3991492",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -60,7 +60,8 @@
           "name": "parameters",
           "type": "jsonb",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false,
+          "default": "'[]'::jsonb"
         },
         "public_test_cases": {
           "name": "public_test_cases",
@@ -85,7 +86,8 @@
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false
+          "notNull": false,
+          "default": "now()"
         },
         "deleted_at": {
           "name": "deleted_at",

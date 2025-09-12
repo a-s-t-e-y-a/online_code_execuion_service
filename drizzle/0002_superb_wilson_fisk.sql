@@ -1,1 +1,0 @@
-ALTER TABLE "problem_entity" DROP COLUMN "difficulty";

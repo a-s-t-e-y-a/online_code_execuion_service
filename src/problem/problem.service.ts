@@ -1,4 +1,4 @@
-import { Injectable, Logger, Inject } from '@nestjs/common';
+import { Injectable, Logger, Inject, HttpException, BadRequestException } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { CreateProblemDto } from './dto/create-problem.dto';
 import { UpdateProblemDto } from './dto/update-problem.dto';
@@ -8,6 +8,9 @@ import * as schema from '../schema';
 import { DrizzleAsyncProvider } from '../drizzle/drizzle.provider';
 
 import { eq } from 'drizzle-orm';
+import { TemplateServerCumMiddlewareService } from 'src/template_server_cum_middleware/template_server_cum_middleware.service';
+import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+
 ``
 
 @Injectable()
@@ -16,8 +19,22 @@ export class ProblemService {
 
   constructor(
     @Inject(DrizzleAsyncProvider)
-    private readonly db: NodePgDatabase<typeof schema>
+    private readonly db: NodePgDatabase<typeof schema>,
+    private readonly templateService: TemplateServerCumMiddlewareService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache
   ) { }
+
+  checkUploads(uploads?: {
+    public_test_cases?: BucketUploadsType[];
+    private_test_cases?: BucketUploadsType[];
+  }){
+      if (
+        (!uploads?.public_test_cases || uploads.public_test_cases.length === 0) ||
+        (!uploads?.private_test_cases || uploads.private_test_cases.length === 0)
+      ) {
+        throw new BadRequestException('Both test case file (public or private) must be provided.');
+      }
+  }
 
   async create(params: {
     createProblemDto: CreateProblemDto;
@@ -27,65 +44,54 @@ export class ProblemService {
     };
   }) {
     const { createProblemDto, uploads } = params;
-    console.log(createProblemDto.parameters)
-    this.logger.log('Creating a new problem', JSON.stringify({ createProblemDto, uploads }));
-    
-    this.logger.log('Uploads structure:', JSON.stringify(uploads));
-
+   const {content} = await this.templateService.generateTemplate(1);
     const problemData = {
       title: createProblemDto.title,
       description: createProblemDto.description,
       difficulty: createProblemDto.difficulty,
       function_name: createProblemDto.function_name,
       parameters_number: createProblemDto.parameters.length.toString(),
-      
       parameters: createProblemDto.parameters.map(param => ({
         name: param.name,
         type: param.type
       })),
+      boiler_plate_code: `${content}`,
       public_test_cases: uploads?.public_test_cases?.[0]?.url || '',
       private_test_cases: uploads?.private_test_cases?.[0]?.url || '',
     };
-
-    console.log(problemData);
-    
-    try {
-     
-      this.logger.log('Inserting problem data:', JSON.stringify(problemData, null, 2));
-      
-      const result = await this.db
+ 
+    const result = await this.db
         .insert(problem_entity)
         .values(problemData)
         .returning();
-        
-      this.logger.log('Problem created successfully', result[0]);
-      return result[0];
-    } catch (error: any) {
-      this.logger.error('Database insertion error:', error.message);
-      this.logger.error('DB error code:', error.code);
-      this.logger.error('DB error detail:', error.detail);
-      this.logger.error('DB error hint:', error.hint);
-      this.logger.error('Full error:', error);
-      this.logger.error('Problem data that failed:', JSON.stringify(problemData, null, 2));
-      throw new Error(`Failed to create problem: ${error.message}`);
-    }
-    
+    return result[0]; 
   }
-
+  
   async findAll() {
     const problems = await this.db.select().from(problem_entity);
     return problems;
   }
 
   async findOne(id: number) {
+    const data_from_cache = await this.cacheManager.get(`problem_${id}`);
+    if(data_from_cache){
+      console.log("Data from cache");
+      return JSON.parse(data_from_cache as string);
+    } 
     const problem = await this.db
-      .select()
+      .select({
+        id: problem_entity.id,
+        title: problem_entity.title,
+        description: problem_entity.description,
+        boiler_plate_code: problem_entity.boiler_plate_code,
+      })
       .from(problem_entity)
       .where(eq(problem_entity.id, id));
   
     if (problem.length === 0) {
       return 'No problem with this id found';
     }
+    await this.cacheManager.set(`problem_${id}`, JSON.stringify(problem[0]));
     return problem[0];
   }
 
