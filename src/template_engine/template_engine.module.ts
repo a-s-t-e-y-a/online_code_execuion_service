@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { TemplateServerCumMiddlewareService } from './template_server_cum_middleware.service';
-import { TemplateServerCumMiddlewareController } from './template_server_cum_middleware.controller';
+import { TemplateServerCumMiddlewareService } from './template_engine.service';
+import { TemplateServerCumMiddlewareController } from './template_engine.controller';
 import { DrizzleModule } from 'src/drizzle/drizzle.module';
 
 @Module({

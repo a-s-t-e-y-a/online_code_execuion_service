@@ -27,6 +27,7 @@ export const boiler_plate_snippet = pgTable('boiler_plate_snippet', {
   problem_id: integer('problem_id').notNull().references(() => problem_entity.id), 
   code_snippet: text('code_snippet').notNull(),
   language: text('language').notNull(),
+  extension: text('extension').notNull(),
   ...common_entity
 });
 

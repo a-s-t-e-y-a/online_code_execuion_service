@@ -6,7 +6,7 @@ import { CacheModule } from '@nestjs/cache-manager';
 import { DrizzleModule } from './drizzle/drizzle.module';
 import { ProblemModule } from './problem/problem.module';
 import { BucketsModule } from './buckets/buckets.module';
-import { TemplateServerCumMiddlewareModule } from './template_server_cum_middleware/template_server_cum_middleware.module';
+import { TemplateServerCumMiddlewareModule } from './template_engine/template_engine.module';
 import KeyvRedis, { Keyv } from '@keyv/redis';
 import { CacheableMemory } from 'cacheable';
 import { BullModule } from '@nestjs/bullmq';

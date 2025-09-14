@@ -3,13 +3,15 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { CreateProblemDto } from './dto/create-problem.dto';
 import { UpdateProblemDto } from './dto/update-problem.dto';
 import { BucketUploadsType } from 'src/buckets/decorators/bucket-upload.decorator';
-import { problem_entity } from '../database/problem.entity';
+import { problem_entity, boiler_plate_snippet } from '../database/problem.entity';
 import * as schema from '../schema';
 import { DrizzleAsyncProvider } from '../drizzle/drizzle.provider';
 
-import { eq } from 'drizzle-orm';
-import { TemplateServerCumMiddlewareService } from 'src/template_server_cum_middleware/template_server_cum_middleware.service';
+import { eq, and } from 'drizzle-orm';
+import { TemplateServerCumMiddlewareService } from 'src/template_engine/template_engine.service';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
+import languages from 'src/config/languages';
+import { flag_names } from 'src/config/flag_name';
 
 ``
 
@@ -44,7 +46,7 @@ export class ProblemService {
     };
   }) {
     const { createProblemDto, uploads } = params;
-    const { content } = await this.templateService.generateTemplate({ id: 0, template_name: 'solution.hbs' });
+    
     const problemData = {
       title: createProblemDto.title,
       description: createProblemDto.description,
@@ -55,7 +57,6 @@ export class ProblemService {
         name: param.name,
         type: param.type
       })),
-      boiler_plate_code: `${content}`,
       public_test_cases: uploads?.public_test_cases?.[0]?.url || '',
       private_test_cases: uploads?.private_test_cases?.[0]?.url || '',
     };
@@ -64,11 +65,34 @@ export class ProblemService {
         .insert(problem_entity)
         .values(problemData)
         .returning();
+    
+  
+    const templateResults = await this.templateService.generateTemplate({
+      template_name: 'solution.hbs',
+      description: createProblemDto.description,
+      function_name: createProblemDto.function_name,
+      parameters: createProblemDto.parameters.map(param => ({
+        name: param.name,
+        type: param.type
+      })),
+      problem_id: result[0].id,
+      flag: flag_names.BOILERPLATE_CODE_FLAG
+    });
+    
+    
+    await this.db
+      .insert(boiler_plate_snippet)
+      .values(templateResults);
+    
     return result[0]; 
   }
   
   async findAll() {
-    const problems = await this.db.select().from(problem_entity);
+    const problems = await this.db.query.problem_entity.findMany({
+      with: {
+        boilerPlateSnippets: true
+      }
+    });
     return problems;
   }
 
@@ -78,21 +102,37 @@ export class ProblemService {
       console.log("Data from cache");
       return JSON.parse(data_from_cache as string);
     } 
-    const problem = await this.db
-      .select({
-        id: problem_entity.id,
-        title: problem_entity.title,
-        description: problem_entity.description,
-        boiler_plate_code: problem_entity.boiler_plate_code,
-      })
-      .from(problem_entity)
-      .where(eq(problem_entity.id, id));
+    
+    const problem = await this.db.query.problem_entity.findFirst({
+      where: eq(problem_entity.id, id),
+      with: {
+        boilerPlateSnippets: true
+      }
+    });
   
-    if (problem.length === 0) {
-      return 'No problem with this id found';
+    if (!problem) {
+      throw new BadRequestException(`No problem with this id found`);
     }
-    await this.cacheManager.set(`problem_${id}`, JSON.stringify(problem[0]));
-    return problem[0];
+    
+    await this.cacheManager.set(`problem_${id}`, JSON.stringify(problem));
+    return problem;
+  }
+
+  async getBoilerplateCode(problemId: number, language: string) {
+    const snippet = await this.db
+      .select()
+      .from(boiler_plate_snippet)
+      .where(and(
+        eq(boiler_plate_snippet.problem_id, problemId),
+        eq(boiler_plate_snippet.language, language)
+      ))
+      .limit(1);
+    
+    if (snippet.length === 0) {
+      throw new BadRequestException(`No boilerplate code found for problem ${problemId} in language ${language}`);
+    }
+    
+    return snippet[0];
   }
 
   async update(id: number, updateProblemDto: UpdateProblemDto) {
