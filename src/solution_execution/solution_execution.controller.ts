@@ -13,7 +13,15 @@ export class SolutionExecutionController {
   @ApiOperation({ summary: 'Queue a code execution job' })
   @ApiResponse({ status: 201, description: 'Job queued successfully' })
   async executeCode(@Body() executeCodeDto: ExecuteCodeDto) {
-    const job = await this.jobSchedulingService.addCodeExecutionJob(executeCodeDto);
+    const job = await this.jobSchedulingService.addCodeExecutionJob({
+      data: {
+        code: executeCodeDto.code,
+        language: executeCodeDto.language,
+        testCases: executeCodeDto.testCases,
+        problemId: executeCodeDto.problemId,
+        userId: executeCodeDto.userId,
+      }
+    });
     return { jobId: job.id, message: 'Job queued successfully' };
   }
 

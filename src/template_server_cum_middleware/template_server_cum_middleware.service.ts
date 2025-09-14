@@ -12,8 +12,8 @@ import * as handlebars from 'handlebars';
 export class TemplateServerCumMiddlewareService {
   constructor(
     @Inject(DrizzleAsyncProvider)
-    private readonly db: NodePgDatabase<typeof schema>
-  ) { }
+    private readonly db: NodePgDatabase<typeof schema>,
+  ) {}
 
   async findOne(id: number) {
     const problem = await this.db
@@ -31,7 +31,9 @@ export class TemplateServerCumMiddlewareService {
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error(`Failed to fetch test cases from ${url}: ${response.statusText}`);
+        throw new Error(
+          `Failed to fetch test cases from ${url}: ${response.statusText}`,
+        );
       }
       const jsonData = await response.json();
       return Array.isArray(jsonData) ? jsonData : [];
@@ -41,23 +43,70 @@ export class TemplateServerCumMiddlewareService {
     }
   }
 
-  async generateTemplate(id: number): Promise<{ filename: string; content: string }> {
-
+  private async generateBoilerPlate({
+    function_name,
+    parameters,
+    description,
+  }: {
+    function_name: string;
+    parameters: any[];
+    description: string;
+  }): Promise<string> {
     const problem = await this.findOne(id);
-    const templatePath = path.join(process.cwd(), 'src', 'templates', 'javascript', 'solution.hbs');
+    const boilerplate = `
+      /**
+       * ${description}
+       */
+      function ${function_name}(${parameters.join(', ')}) {
+        // TODO: Implement function
+      }
+    `;
+    return boilerplate;
+  }
+
+
+  
+  async generateTemplate({
+    template_name,
+    description,
+    function_name,
+    parameters,
+    public_test_cases,
+    private_test_cases,
+    problem_id,
+    language,
+  }: {
+
+    template_name: string;
+    description?: string;
+    function_name?: string;
+    parameters?: any[];
+    public_test_cases?: any[];
+    private_test_cases?: any[];
+    problem_id?: number;
+    language: string;
+  }): Promise<{ filename: string; content: string }> {
+
+    const templatePath = path.join(
+      process.cwd(),
+      'src',
+      'templates',
+      language,
+      template_name,
+    );
     const templateContent = fs.readFileSync(templatePath, 'utf-8');
     const template = handlebars.compile(templateContent);
     const templateData = {
-      description: problem.description,
-      function_name: problem.function_name,
-      parameters: problem.parameters,
+      description: description,
+      function_name: function_name,
+      parameters: parameters ,
     };
     const generatedCode = template(templateData);
     console.log(generatedCode);
-    const filename = `${problem.function_name}_solution.js`;
+    const filename = `${problem_id}_${function_name}_solution.js`;
     return {
       filename,
-      content: generatedCode
+      content: generatedCode,
     };
   }
 }

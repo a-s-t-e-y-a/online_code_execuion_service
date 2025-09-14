@@ -44,7 +44,7 @@ export class ProblemService {
     };
   }) {
     const { createProblemDto, uploads } = params;
-   const {content} = await this.templateService.generateTemplate(1);
+    const { content } = await this.templateService.generateTemplate({ id: 0, template_name: 'solution.hbs' });
     const problemData = {
       title: createProblemDto.title,
       description: createProblemDto.description,

@@ -3,13 +3,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
 
 @Injectable()
-@Processor('code-execution')
+@Processor('code-execution', {
+  concurrency: 100, 
+})
 export class CodeExecutionConsumer extends WorkerHost {
   private readonly logger = new Logger(CodeExecutionConsumer.name);
 
   async process(job: Job<any, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
-    
+
     switch (job.name) {
       case 'execute-code':
         return this.executeCode(job);
@@ -20,21 +22,22 @@ export class CodeExecutionConsumer extends WorkerHost {
 
   private async executeCode(job: Job) {
     const { code, language, testCases, problemId, userId } = job.data;
-    
+
     try {
       // Update progress
       await job.updateProgress(10);
-      
+
       // Simulate code execution logic here
       this.logger.log(`Executing ${language} code for user ${userId}, problem ${problemId}`);
-      
+
       await job.updateProgress(50);
-      
-      // Simulate execution delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
+
+
+      await new Promise(resolve => setTimeout(resolve, 20000));
+
       await job.updateProgress(90);
-      
+
       // Mock result
       const result = {
         success: true,
@@ -47,12 +50,12 @@ export class CodeExecutionConsumer extends WorkerHost {
           output: `Test ${index + 1} output`,
         })) || [],
       };
-      
+
       await job.updateProgress(100);
-      
+
       this.logger.log(`Job ${job.id} completed successfully`);
       return result;
-      
+
     } catch (error) {
       this.logger.error(`Job ${job.id} failed:`, error);
       throw error;

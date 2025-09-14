@@ -7,6 +7,7 @@ interface CodeExecutionJobData {
   language: string;
   testCases?: any[];
   problemId?: number;
+  userId?: string;
 }
 
 @Injectable()
@@ -18,11 +19,10 @@ export class JobSchedulingService {
   ) {}
 
   
-  async addCodeExecutionJob(data: CodeExecutionJobData, options?: any) {
+  async addCodeExecutionJob(params: { data: CodeExecutionJobData; options?: any }) {
+    const { data, options = {} } = params;
     try {
-      const job = await this.codeExecutionQueue.add('execute-code', data, {
-        removeOnComplete: 10, 
-        removeOnFail: 5,     
+      const job = await this.codeExecutionQueue.add('execute-code', data, {    
         attempts: 3,         
         backoff: {
           type: 'exponential',
@@ -40,7 +40,7 @@ export class JobSchedulingService {
   }
 
   async addDelayedJob(data: CodeExecutionJobData, delayMs: number) {
-    return this.addCodeExecutionJob(data, { delay: delayMs });
+    return this.addCodeExecutionJob({ data, options: { delay: delayMs } });
   }
 
   async getJob(jobId: string) {

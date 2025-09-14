@@ -15,6 +15,13 @@
       "when": 1757700284091,
       "tag": "0001_nebulous_pretty_boy",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1757819624518,
+      "tag": "0002_workable_umar",
+      "breakpoints": true
     }
   ]
 }

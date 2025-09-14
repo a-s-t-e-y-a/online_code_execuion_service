@@ -11,7 +11,7 @@ export class TemplateServerCumMiddlewareController {
   @ApiOperation({ summary: 'Download boilerplate code for a problem' })
   async downloadTemplate(@Param('id') id: string, @Res() res: Response) {
     try {
-      const fileData = await this.templateServerCumMiddlewareService.generateTemplate(+id);
+      const fileData = await this.templateServerCumMiddlewareService.generateTemplate({ id: +id, template_name: 'solution.hbs' });
       
       res.setHeader('Content-Type', 'application/javascript');
       res.setHeader('Content-Disposition', `attachment; filename="${fileData.filename}"`);
