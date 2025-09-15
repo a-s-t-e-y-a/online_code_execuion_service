@@ -1,28 +1,93 @@
-import { Controller, Post, Body, Get, Param } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Param,
+  BadRequestException,
+} from '@nestjs/common';
 import { JobSchedulingService } from '../job_scheduling/job_scheduling.service';
-import { ExecuteCodeDto } from './dto/execute-code.dto';
+
 import { JobStatusDto } from './dto/solution_execution.dto';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import {
+  ExecuteCodeDto,
+  ExecutionType,
+} from './dto/create-solution_execution.dto';
+import { TemplateServerCumMiddlewareService } from 'src/template_engine/template_engine.service';
+import { ProblemService } from 'src/problem/problem.service';
+import { flag_names } from 'src/config/flag_name';
+import { exec } from 'child_process';
+import { SolutionExecutionService } from './solution_execution.service';
+import { responseInterface } from 'src/database/return.interface';
 
 @ApiTags('jobs') // Groups endpoints in Swagger UI
 @Controller('jobs')
 export class SolutionExecutionController {
-  constructor(private readonly jobSchedulingService: JobSchedulingService) {}
+  constructor(
+    private readonly jobSchedulingService: JobSchedulingService,
+    private readonly templateService: TemplateServerCumMiddlewareService,
+    private readonly problemService: ProblemService,
+    private readonly solutionExecutionService: SolutionExecutionService,
+  ) {}
 
-  @Post('execute')
+  @Post('execute/:type')
   @ApiOperation({ summary: 'Queue a code execution job' })
+  @ApiParam({
+    name: 'type',
+    enum: ExecutionType,
+    description: 'Type of execution (public, private, or full)',
+    example: 'public',
+  })
   @ApiResponse({ status: 201, description: 'Job queued successfully' })
-  async executeCode(@Body() executeCodeDto: ExecuteCodeDto) {
+  async executeCode(
+    @Body() executeCodeDto: ExecuteCodeDto,
+    @Param('type') type: string,
+  ): Promise<responseInterface> {
+    const problem_data = await this.problemService.findOne(
+      executeCodeDto.problemId,
+    );
+    let template_name =
+      type == 'full'
+        ? 'solution_with_full_cases.hbs'
+        : 'solution_with_public_cases.hbs';
+
+    const code_template_generation =
+      await this.templateService.generateTemplate({
+        template_name: template_name,
+        function_name: problem_data.function_name,
+        language: executeCodeDto.language,
+        parameters: problem_data.parameters.map((param) => ({
+          name: param.name,
+          type: param.type,
+        })),
+        public_test_cases_url: problem_data.public_test_cases,
+        private_test_cases_url: problem_data.private_test_cases,
+        user_code: executeCodeDto.code,
+        problem_id: problem_data.id,
+        flag: this.solutionExecutionService.returnFlag(type),
+      });
+    console.log('code_template_generation', code_template_generation);
     const job = await this.jobSchedulingService.addCodeExecutionJob({
       data: {
-        code: executeCodeDto.code,
+        code: btoa(code_template_generation[0].code_snippet),
         language: executeCodeDto.language,
-        testCases: executeCodeDto.testCases,
         problemId: executeCodeDto.problemId,
         userId: executeCodeDto.userId,
-      }
+      },
     });
-    return { jobId: job.id, message: 'Job queued successfully' };
+    const data = {
+      jobId: job.id,
+      code: btoa(code_template_generation[0].code_snippet),
+      language: executeCodeDto.language,
+      problemId: executeCodeDto.problemId,
+      userId: executeCodeDto.userId,
+    };
+    return {
+      data,
+      message: 'Job queued successfully',
+      success: true,
+    };
   }
 
   @Get('status/:jobId')
@@ -30,7 +95,9 @@ export class SolutionExecutionController {
   @ApiParam({ name: 'jobId', description: 'ID of the job' })
   @ApiResponse({ status: 200, description: 'Job status', type: JobStatusDto })
   @ApiResponse({ status: 404, description: 'Job not found' })
-  async getJobStatus(@Param('jobId') jobId: string): Promise<JobStatusDto | { error: string }> {
+  async getJobStatus(
+    @Param('jobId') jobId: string,
+  ): Promise<JobStatusDto | { error: string }> {
     const job = await this.jobSchedulingService.getJob(jobId);
 
     if (!job) {

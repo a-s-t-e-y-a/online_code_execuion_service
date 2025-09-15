@@ -12,6 +12,7 @@ import { CacheableMemory } from 'cacheable';
 import { BullModule } from '@nestjs/bullmq';
 import { JobSchedulingModule } from './job_scheduling/job_scheduling.module';
 import { SolutionExecutionModule } from './solution_execution/solution_execution.module';
+import { CommonUseServiceService } from './common.use.service/common.use.service.service';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -44,6 +45,6 @@ import { SolutionExecutionModule } from './solution_execution/solution_execution
     SolutionExecutionModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, CommonUseServiceService],
 })
 export class AppModule { }

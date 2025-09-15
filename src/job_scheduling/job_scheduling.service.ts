@@ -15,22 +15,24 @@ export class JobSchedulingService {
   private readonly logger = new Logger(JobSchedulingService.name);
 
   constructor(
-    @InjectQueue('code-execution') private readonly codeExecutionQueue: Queue
+    @InjectQueue('code-execution') private readonly codeExecutionQueue: Queue,
   ) {}
 
-  
-  async addCodeExecutionJob(params: { data: CodeExecutionJobData; options?: any }) {
+  async addCodeExecutionJob(params: {
+    data: CodeExecutionJobData;
+    options?: any;
+  }) {
     const { data, options = {} } = params;
     try {
-      const job = await this.codeExecutionQueue.add('execute-code', data, {    
-        attempts: 3,         
+      const job = await this.codeExecutionQueue.add('execute-code', data, {
+        attempts: 3,
         backoff: {
           type: 'exponential',
           delay: 0,
         },
-        ...options
+        ...options,
       });
-      
+
       this.logger.log(`Code execution job added with ID: ${job.id}`);
       return job;
     } catch (error) {
@@ -65,7 +67,11 @@ export class JobSchedulingService {
 
   async getWaitingJobs(start = 0, end = 10) {
     try {
-      const jobs = await this.codeExecutionQueue.getJobs(['waiting'], start, end);
+      const jobs = await this.codeExecutionQueue.getJobs(
+        ['waiting'],
+        start,
+        end,
+      );
       return jobs;
     } catch (error) {
       this.logger.error('Failed to get waiting jobs', error);
@@ -73,10 +79,13 @@ export class JobSchedulingService {
     }
   }
 
-
   async getActiveJobs(start = 0, end = 10) {
     try {
-      const jobs = await this.codeExecutionQueue.getJobs(['active'], start, end);
+      const jobs = await this.codeExecutionQueue.getJobs(
+        ['active'],
+        start,
+        end,
+      );
       return jobs;
     } catch (error) {
       this.logger.error('Failed to get active jobs', error);
@@ -86,7 +95,11 @@ export class JobSchedulingService {
 
   async getCompletedJobs(start = 0, end = 10) {
     try {
-      const jobs = await this.codeExecutionQueue.getJobs(['completed'], start, end);
+      const jobs = await this.codeExecutionQueue.getJobs(
+        ['completed'],
+        start,
+        end,
+      );
       return jobs;
     } catch (error) {
       this.logger.error('Failed to get completed jobs', error);
@@ -96,7 +109,11 @@ export class JobSchedulingService {
 
   async getFailedJobs(start = 0, end = 10) {
     try {
-      const jobs = await this.codeExecutionQueue.getJobs(['failed'], start, end);
+      const jobs = await this.codeExecutionQueue.getJobs(
+        ['failed'],
+        start,
+        end,
+      );
       return jobs;
     } catch (error) {
       this.logger.error('Failed to get failed jobs', error);
@@ -163,7 +180,11 @@ export class JobSchedulingService {
     }
   }
 
-  async cleanOldJobs(grace = 0, limit = 100, type: 'completed' | 'failed' | 'active' | 'waiting' = 'completed') {
+  async cleanOldJobs(
+    grace = 0,
+    limit = 100,
+    type: 'completed' | 'failed' | 'active' | 'waiting' = 'completed',
+  ) {
     try {
       const result = await this.codeExecutionQueue.clean(grace, limit, type);
       this.logger.log(`Cleaned ${result.length} ${type} jobs`);
@@ -184,12 +205,11 @@ export class JobSchedulingService {
     }
   }
 
-
   async getQueueStats() {
     try {
       const counts = await this.getJobCounts();
       const isPaused = await this.isQueuePaused();
-      
+
       return {
         counts,
         isPaused,
@@ -201,7 +221,9 @@ export class JobSchedulingService {
     }
   }
 
-  async addBulkJobs(jobsData: Array<{ name: string; data: CodeExecutionJobData; opts?: any }>) {
+  async addBulkJobs(
+    jobsData: Array<{ name: string; data: CodeExecutionJobData; opts?: any }>,
+  ) {
     try {
       const jobs = await this.codeExecutionQueue.addBulk(jobsData);
       this.logger.log(`Added ${jobs.length} bulk jobs`);

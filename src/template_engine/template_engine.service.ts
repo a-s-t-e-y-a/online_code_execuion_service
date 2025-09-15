@@ -27,7 +27,7 @@ interface TestCase {
 
 interface GenerateTemplateParams {
   template_name: string;
-  description: string;
+  description?: string;
   function_name: string;
   parameters: Parameter[];
   public_test_cases_url?: string;
@@ -35,17 +35,19 @@ interface GenerateTemplateParams {
   problem_id: number;
   language?: string;
   flag: string;
+  user_code?: string;
 }
 
 interface GenerateTemplateEngineParams {
   problem_id: number;
   template_name: string;
   language: string;
-  description: string;
+  description?: string;
   function_name: string;
   parameters: Parameter[];
-  public_test_cases: TestCase[];
-  private_test_cases: TestCase[];
+  public_test_cases?: TestCase[];
+  private_test_cases?: TestCase[];
+  user_code?: string;
 }
 
 interface TemplateResult {
@@ -62,7 +64,17 @@ export class TemplateServerCumMiddlewareService {
   constructor(
     @Inject(DrizzleAsyncProvider)
     private readonly db: NodePgDatabase<typeof schema>,
-  ) {}
+  ) {
+    // Register Handlebars helpers
+    this.registerHelpers();
+  }
+
+  private registerHelpers() {
+    // Register JSON helper for serializing objects in templates
+    handlebars.registerHelper('json', function(context) {
+      return JSON.stringify(context);
+    });
+  }
 
   async findOne(id: number) {
     const problem = await this.db
@@ -105,6 +117,7 @@ export class TemplateServerCumMiddlewareService {
       problem_id,
       language,
       flag,
+      user_code
     } = params;
 
     if (flag === flag_names.BOILERPLATE_CODE_FLAG) {
@@ -116,8 +129,6 @@ export class TemplateServerCumMiddlewareService {
           description,
           function_name,
           parameters,
-          public_test_cases: [],
-          private_test_cases: [],
         });
         return {
           problem_id,
@@ -166,11 +177,12 @@ export class TemplateServerCumMiddlewareService {
         problem_id,
         template_name,
         language,
-        description,
+        // description,
         function_name,
         parameters,
         public_test_cases: effectivePublicTestCases,
         private_test_cases: effectivePrivateTestCases,
+        user_code
       });
       const languageConfig = languages.find(lang => lang.name.toLowerCase() === language.toLowerCase());
       return [{
@@ -189,11 +201,12 @@ export class TemplateServerCumMiddlewareService {
       problem_id,
       template_name,
       language,
-      description,
+      // description,
       function_name,
       parameters,
       public_test_cases,
       private_test_cases,
+      user_code
     } = params;
     const cacheKey = `${language}_${template_name}`;
     let template: HandlebarsTemplateDelegate;
@@ -214,13 +227,15 @@ export class TemplateServerCumMiddlewareService {
     }
 
     const templateData = {
-      description,
+      // description,
       function_name,
       parameters,
       public_test_cases,
       private_test_cases,
+      user_code: user_code ? atob(user_code) : '', // Decode base64 user code here
+      has_user_code: !!user_code,
     };
-    const generatedCode = template(templateData);
+    const generatedCode =template(templateData);
     console.log(generatedCode);
     const languageConfig = languages.find(lang => lang.name.toLowerCase() === language.toLowerCase());
     const extension = languageConfig?.extension || 'js';

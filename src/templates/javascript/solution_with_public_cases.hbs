@@ -1,15 +1,9 @@
-/**
- * {{description}}
- * 
- * Complete solution with all test cases for execution
- */
-
-{{user_code}}
-
 const assert = require('assert');
 
+{{{user_code}}}
+
 // Public test cases
-const publicTestCases = {{{public_test_cases}}};
+const publicTestCases = {{{json public_test_cases}}};
 
 // Test execution function
 function executeTests() {
@@ -26,24 +20,26 @@ function executeTests() {
             index: index + 1,
             description: testCase.description || `Test case ${index + 1}`,
             status: 'failed',
-            expected: testCase.expected,
+            expected: testCase.output, // Use 'output' field from JSON
             actual: null,
             error: null
         };
         
         try {
-            const result = {{function_name}}(...testCase.input);
+            // Handle the input structure - extract values from the input object
+            const inputValues = Object.values(testCase.input);
+            const result = {{function_name}}(...inputValues);
             testResult.actual = result;
             
             // Use assert.deepStrictEqual for proper object comparison
-            assert.deepStrictEqual(result, testCase.expected);
+            assert.deepStrictEqual(result, testCase.output);
             
             testResult.status = 'passed';
             results.passed++;
         } catch (error) {
             if (error.name === 'AssertionError') {
                 testResult.status = 'failed';
-                testResult.error = error.message;
+                testResult.error = `Expected: ${JSON.stringify(testCase.output)}, Got: ${JSON.stringify(testResult.actual)}`;
                 results.failed++;
             } else {
                 testResult.status = 'error';
