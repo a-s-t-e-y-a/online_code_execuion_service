@@ -53,7 +53,7 @@ interface PistonExecuteResponse {
 
 @Injectable()
 @Processor('code-execution', {
-  concurrency: 100, 
+  concurrency: 100,
 })
 export class CodeExecutionConsumer extends WorkerHost {
   private readonly logger = new Logger(CodeExecutionConsumer.name);
@@ -74,43 +74,40 @@ export class CodeExecutionConsumer extends WorkerHost {
     const { code, language, problemId, userId } = job.data;
 
     try {
-
-      await job.updateProgress(10);
-
-      this.logger.log(`Executing ${language} code for user ${userId}, problem ${problemId}`);
-
       const languageMapping = mapLanguageToPiston.find(
-        mapping => mapping.runtime.toLowerCase() === language.toLowerCase()
+        (mapping) => mapping.runtime.toLowerCase() === language.toLowerCase(),
       );
 
       if (!languageMapping) {
-        throw new Error(`Unsupported language: ${language}. Available languages: ${mapLanguageToPiston.map(m => m.runtime).join(', ')}`);
+        throw new Error(
+          `Unsupported language: ${language}. Available languages: ${mapLanguageToPiston.map((m) => m.runtime).join(', ')}`,
+        );
       }
 
-      const { piston: pistonLanguage, runtime_version: pistonVersion } = languageMapping;
+      const { piston: pistonLanguage, runtime_version: pistonVersion } =
+        languageMapping;
 
-      this.logger.log(`Mapped ${language} to Piston language: ${pistonLanguage} version: ${pistonVersion}`);
-
-      await job.updateProgress(30);
-
+      this.logger.log(
+        `Mapped ${language} to Piston language: ${pistonLanguage} version: ${pistonVersion}`,
+      );
 
       const getFileExtension = (lang: string): string => {
         const extensions: Record<string, string> = {
-          'javascript': 'js',
-          'python': 'py',
-          'java': 'java',
-          'cpp': 'cpp',
+          javascript: 'js',
+          python: 'py',
+          java: 'java',
+          cpp: 'cpp',
           'c++': 'cpp',
-          'c': 'c',
-          'go': 'go',
-          'rust': 'rs',
-          'php': 'php',
-          'ruby': 'rb',
-          'swift': 'swift',
-          'kotlin': 'kt',
-          'csharp': 'cs',
-          'bash': 'sh',
-          'typescript': 'ts',
+          c: 'c',
+          go: 'go',
+          rust: 'rs',
+          php: 'php',
+          ruby: 'rb',
+          swift: 'swift',
+          kotlin: 'kt',
+          csharp: 'cs',
+          bash: 'sh',
+          typescript: 'ts',
         };
         return extensions[lang.toLowerCase()] || 'txt';
       };
@@ -122,25 +119,23 @@ export class CodeExecutionConsumer extends WorkerHost {
           {
             name: `solution.${getFileExtension(language)}`,
             content: atob(code), // Decode base64 to plain text
-            encoding: 'utf8'     // Send as plain text
-          }
+            encoding: 'utf8', // Send as plain text
+          },
         ],
         stdin: '',
         args: [],
-        compile_timeout: 10000, 
-        run_timeout: 3000,      
+        compile_timeout: 10000,
+        run_timeout: 3000,
         compile_cpu_time: 3000,
         run_cpu_time: 3000,
-        compile_memory_limit: 128000000, 
-        run_memory_limit: 128000000,     
+        compile_memory_limit: 128000000,
+        run_memory_limit: 128000000,
       };
-
-      await job.updateProgress(50);
 
       this.logger.log('Sending request to Piston API...', {
         language: pistonLanguage,
         version: pistonVersion,
-        fileName: pistonRequest.files[0].name
+        fileName: pistonRequest.files[0].name,
       });
 
       // Execute code via Piston API
@@ -151,11 +146,9 @@ export class CodeExecutionConsumer extends WorkerHost {
           timeout: 30000, // 30 seconds timeout for the HTTP request
           headers: {
             'Content-Type': 'application/json',
-          }
-        }
+          },
+        },
       );
-
-      await job.updateProgress(80);
 
       const pistonResult = response.data;
 
@@ -164,7 +157,7 @@ export class CodeExecutionConsumer extends WorkerHost {
         signal: pistonResult.run.signal,
         status: pistonResult.run.status,
         executionTime: pistonResult.run.wall_time,
-        memoryUsed: pistonResult.run.memory
+        memoryUsed: pistonResult.run.memory,
       });
 
       // Parse test results from stdout if it contains JSON
@@ -176,7 +169,10 @@ export class CodeExecutionConsumer extends WorkerHost {
           testResults = parsed.details || parsed || [];
         }
       } catch (parseError) {
-        this.logger.warn('Could not parse test results from stdout:', parseError);
+        this.logger.warn(
+          'Could not parse test results from stdout:',
+          parseError,
+        );
       }
 
       // Prepare result
@@ -205,33 +201,33 @@ export class CodeExecutionConsumer extends WorkerHost {
         userId,
       };
 
-      await job.updateProgress(100);
-
       this.logger.log(`Job ${job.id} completed successfully`, {
         success: result.success,
-        testsPassed: testResults.filter((t: any) => t.status === 'passed').length,
-        testsTotal: testResults.length
+        testsPassed: testResults.filter((t: any) => t.status === 'passed')
+          .length,
+        testsTotal: testResults.length,
       });
 
       return result;
-
     } catch (error) {
       this.logger.error(`Job ${job.id} failed:`, error);
-      
+
       // Handle different types of errors
       if (axios.isAxiosError(error)) {
         const axiosError = error;
         if (axiosError.response) {
           // Piston API returned an error
           this.logger.error('Piston API error:', axiosError.response.data);
-          throw new Error(`Piston API error: ${axiosError.response.data.message || 'Unknown error'}`);
+          throw new Error(
+            `Piston API error: ${axiosError.response.data.message || 'Unknown error'}`,
+          );
         } else if (axiosError.request) {
           // Network error
           this.logger.error('Network error connecting to Piston API');
           throw new Error('Failed to connect to code execution service');
         }
       }
-      
+
       throw error;
     }
   }
@@ -246,11 +242,13 @@ export class CodeExecutionConsumer extends WorkerHost {
     this.logger.log(`Job ${job.id} completed with result:`, {
       success: result.success,
       exitCode: result.exitCode,
-      testsPassed: result.testResults?.filter((t: any) => t.status === 'passed')?.length || 0,
+      testsPassed:
+        result.testResults?.filter((t: any) => t.status === 'passed')?.length ||
+        0,
       testsTotal: result.testResults?.length || 0,
       language: result.originalLanguage,
       pistonLanguage: result.language,
-      version: result.version
+      version: result.version,
     });
   }
 

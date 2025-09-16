@@ -21,6 +21,7 @@ import { exec } from 'child_process';
 import { SolutionExecutionService } from './solution_execution.service';
 import { responseInterface } from 'src/database/return.interface';
 
+
 @ApiTags('jobs') // Groups endpoints in Swagger UI
 @Controller('jobs')
 export class SolutionExecutionController {
@@ -44,51 +45,70 @@ export class SolutionExecutionController {
     @Body() executeCodeDto: ExecuteCodeDto,
     @Param('type') type: string,
   ): Promise<responseInterface> {
-    const problem_data = await this.problemService.findOne(
-      executeCodeDto.problemId,
-    );
-    let template_name =
-      type == 'full'
-        ? 'solution_with_full_cases.hbs'
-        : 'solution_with_public_cases.hbs';
+  
 
-    const code_template_generation =
-      await this.templateService.generateTemplate({
-        template_name: template_name,
-        function_name: problem_data.function_name,
-        language: executeCodeDto.language,
-        parameters: problem_data.parameters.map((param) => ({
-          name: param.name,
-          type: param.type,
-        })),
-        public_test_cases_url: problem_data.public_test_cases,
-        private_test_cases_url: problem_data.private_test_cases,
-        user_code: executeCodeDto.code,
-        problem_id: problem_data.id,
-        flag: this.solutionExecutionService.returnFlag(type),
+    try {
+      // Step 1: Fetch problem data
+     
+      const problem_data = await this.problemService.findOne(
+        executeCodeDto.problemId,
+      );
+
+
+
+      let template_name =
+        type == 'full'
+          ? 'solution_with_full_cases.hbs'
+          : 'solution_with_public_cases.hbs';
+
+      const code_template_generation =
+        await this.templateService.generateTemplate({
+          template_name: template_name,
+          function_name: problem_data.function_name,
+          language: executeCodeDto.language,
+          parameters: problem_data.parameters.map((param) => ({
+            name: param.name,
+            type: param.type,
+          })),
+          public_test_cases_url: problem_data.public_test_cases,
+          private_test_cases_url: problem_data.private_test_cases,
+          user_code: executeCodeDto.code,
+          problem_id: problem_data.id,
+          flag: this.solutionExecutionService.returnFlag(type),
+        });
+    
+
+
+      const job = await this.jobSchedulingService.addCodeExecutionJob({
+        data: {
+          code: btoa(code_template_generation[0].code_snippet),
+          language: executeCodeDto.language,
+          problemId: executeCodeDto.problemId,
+          userId: executeCodeDto.userId,
+        },
       });
-    console.log('code_template_generation', code_template_generation);
-    const job = await this.jobSchedulingService.addCodeExecutionJob({
-      data: {
+
+      const data = {
+        jobId: job.id,
         code: btoa(code_template_generation[0].code_snippet),
         language: executeCodeDto.language,
         problemId: executeCodeDto.problemId,
         userId: executeCodeDto.userId,
-      },
-    });
-    const data = {
-      jobId: job.id,
-      code: btoa(code_template_generation[0].code_snippet),
-      language: executeCodeDto.language,
-      problemId: executeCodeDto.problemId,
-      userId: executeCodeDto.userId,
-    };
-    return {
-      data,
-      message: 'Job queued successfully',
-      success: true,
-    };
+      };
+
+
+      return {
+        data,
+        message: 'Job queued successfully',
+        success: true,
+      };
+    } catch (error) {
+
+
+      throw error;
+    }
   }
+
 
   @Get('status/:jobId')
   @ApiOperation({ summary: 'Get job status' })

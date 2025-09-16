@@ -14,6 +14,7 @@ import * as path from 'path';
 import * as handlebars from 'handlebars';
 import { flag_names } from 'src/config/flag_name';
 import languages from 'src/config/languages';
+import { performance } from 'perf_hooks';
 
 interface Parameter {
   name: string;
@@ -71,7 +72,7 @@ export class TemplateServerCumMiddlewareService {
 
   private registerHelpers() {
     // Register JSON helper for serializing objects in templates
-    handlebars.registerHelper('json', function(context) {
+    handlebars.registerHelper('json', function (context) {
       return JSON.stringify(context);
     });
   }
@@ -89,108 +90,133 @@ export class TemplateServerCumMiddlewareService {
   }
 
   private async fetchJsonFromUrl(url: string): Promise<TestCase[]> {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch test cases from ${url}: ${response.statusText}`,
-        );
-      }
-      const jsonData = await response.json();
-      return Array.isArray(jsonData) ? jsonData : [];
-    } catch (error) {
-      console.error(`Error fetching test cases from ${url}:`, error);
-      return [];
+    const start = performance.now();
+
+    const t1 = performance.now();
+    const response = await fetch(url);
+    console.log('Step 1:', (performance.now() - t1).toFixed(2), 'ms');
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch test cases from ${url}: ${response.statusText}`,
+      );
     }
+    const t2 = performance.now();
+    const jsonData = await response.json();
+    console.log('Step 2:', (performance.now() - t2).toFixed(2), 'ms');
+
+    const t3 =performance.now();
+    const result = Array.isArray(jsonData) ? jsonData : [];
+    console.log('Step 3:', (performance.now() - t3).toFixed(2), 'ms');
+
+    console.log('Total fetchJsonFromUrl time:', (performance.now() - start).toFixed(2), 'ms');
+    return result;
   }
 
   async generateTemplate(
     params: GenerateTemplateParams,
   ): Promise<TemplateResult[]> {
-    const {
-      template_name,
-      description,
-      function_name,
-      parameters,
-      public_test_cases_url,
-      private_test_cases_url,
-      problem_id,
-      language,
-      flag,
-      user_code
-    } = params;
+    const templateId = `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    if (flag === flag_names.BOILERPLATE_CODE_FLAG) {
-      const promises = languages.map(async (lang) => {
+    try {
+      const {
+        template_name,
+        description,
+        function_name,
+        parameters,
+        public_test_cases_url,
+        private_test_cases_url,
+        problem_id,
+        language,
+        flag,
+        user_code,
+      } = params;
+
+      if (flag === flag_names.BOILERPLATE_CODE_FLAG) {
+        const promises = languages.map(async (lang) => {
+          const result = await this.generateTemplateEngine({
+            problem_id,
+            template_name,
+            language: lang.name.toLowerCase(),
+            description,
+            function_name,
+            parameters,
+          });
+          return {
+            problem_id,
+            code_snippet: result.content,
+            language: lang.name.toLowerCase(),
+            extension: lang.extension,
+          };
+        });
+        const results = await Promise.all(promises);
+
+        return results;
+      } else {
+        if (!language) {
+          throw new BadRequestException(
+            'Language must be specified for non-boilerplate code generation',
+          );
+        }
+
+        let effectivePublicTestCases: TestCase[] = [];
+        let effectivePrivateTestCases: TestCase[] = [];
+
+        switch (flag) {
+          case flag_names.CODE_SOLUTION_WITH_ONLY_PUBLIC_TEST_CASE_FLAG:
+            if (!public_test_cases_url) {
+              throw new BadRequestException(
+                'Public test cases URL is required',
+              );
+            }
+            effectivePublicTestCases = await this.fetchJsonFromUrl(
+              public_test_cases_url,
+            );
+            break;
+          case flag_names.FULL_CODE_SOLUTION_FLAG:
+            if (!public_test_cases_url || !private_test_cases_url) {
+              throw new BadRequestException(
+                'Both public and private test cases URLs are required',
+              );
+            }
+            effectivePublicTestCases = await this.fetchJsonFromUrl(
+              public_test_cases_url,
+            );
+            effectivePrivateTestCases = await this.fetchJsonFromUrl(
+              private_test_cases_url,
+            );
+            break;
+          default:
+            throw new NotFoundException(`Unknown flag: ${flag}`);
+        }
+
         const result = await this.generateTemplateEngine({
           problem_id,
           template_name,
-          language: lang.name.toLowerCase(),
-          description,
+          language,
+          // description,
           function_name,
           parameters,
+          public_test_cases: effectivePublicTestCases,
+          private_test_cases: effectivePrivateTestCases,
+          user_code,
         });
-        return {
-          problem_id,
-          code_snippet: result.content,
-          language: lang.name.toLowerCase(),
-          extension: lang.extension,
-        };
-      });
-      return await Promise.all(promises);
-    } else {
-      if (!language) {
-        throw new BadRequestException(
-          'Language must be specified for non-boilerplate code generation',
+
+        const languageConfig = languages.find(
+          (lang) => lang.name.toLowerCase() === language.toLowerCase(),
         );
-      }
-      let effectivePublicTestCases: TestCase[] = [];
-      let effectivePrivateTestCases: TestCase[] = [];
+        const finalResult = [
+          {
+            problem_id,
+            code_snippet: result.content,
+            language,
+            extension: languageConfig?.extension || 'js',
+          },
+        ];
 
-      switch (flag) {
-        case flag_names.CODE_SOLUTION_WITH_ONLY_PUBLIC_TEST_CASE_FLAG:
-          if (!public_test_cases_url) {
-            throw new BadRequestException('Public test cases URL is required');
-          }
-          effectivePublicTestCases = await this.fetchJsonFromUrl(
-            public_test_cases_url,
-          );
-          break;
-        case flag_names.FULL_CODE_SOLUTION_FLAG:
-          if (!public_test_cases_url || !private_test_cases_url) {
-            throw new BadRequestException(
-              'Both public and private test cases URLs are required',
-            );
-          }
-          effectivePublicTestCases = await this.fetchJsonFromUrl(
-            public_test_cases_url,
-          );
-          effectivePrivateTestCases = await this.fetchJsonFromUrl(
-            private_test_cases_url,
-          );
-          break;
-        default:
-          throw new NotFoundException(`Unknown flag: ${flag}`);
+        return finalResult;
       }
-
-      const result = await this.generateTemplateEngine({
-        problem_id,
-        template_name,
-        language,
-        // description,
-        function_name,
-        parameters,
-        public_test_cases: effectivePublicTestCases,
-        private_test_cases: effectivePrivateTestCases,
-        user_code
-      });
-      const languageConfig = languages.find(lang => lang.name.toLowerCase() === language.toLowerCase());
-      return [{
-        problem_id,
-        code_snippet: result.content,
-        language,
-        extension: languageConfig?.extension || 'js',
-      }];
+    } catch (error) {
+      throw error;
     }
   }
 
@@ -206,7 +232,7 @@ export class TemplateServerCumMiddlewareService {
       parameters,
       public_test_cases,
       private_test_cases,
-      user_code
+      user_code,
     } = params;
     const cacheKey = `${language}_${template_name}`;
     let template: HandlebarsTemplateDelegate;
@@ -235,9 +261,10 @@ export class TemplateServerCumMiddlewareService {
       user_code: user_code ? atob(user_code) : '', // Decode base64 user code here
       has_user_code: !!user_code,
     };
-    const generatedCode =template(templateData);
-    console.log(generatedCode);
-    const languageConfig = languages.find(lang => lang.name.toLowerCase() === language.toLowerCase());
+    const generatedCode = template(templateData);
+    const languageConfig = languages.find(
+      (lang) => lang.name.toLowerCase() === language.toLowerCase(),
+    );
     const extension = languageConfig?.extension || 'js';
     const filename = `${problem_id}_${function_name}_solution.${extension}`;
     return {
