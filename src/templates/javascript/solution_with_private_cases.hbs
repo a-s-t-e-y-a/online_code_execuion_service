@@ -7,18 +7,18 @@
 // Import Node.js assert module
 const assert = require('assert');
 
-{{user_code}}
+{{{user_code}}}
 
 // Public test cases
-const publicTestCases = {{{public_test_cases}}};
+const publicTestCases = {{{json public_test_cases}}};
 
 // Private test cases (hidden from user)
-const privateTestCases = {{{private_test_cases}}};
+const privateTestCases = {{{json private_test_cases}}};
 
 // Combine all test cases for execution
 const allTestCases = [...publicTestCases, ...privateTestCases];
 
-// Test execution function with detailed results
+// Test execution function with summary results only
 function executeTests() {
     const results = {
         total: allTestCases.length,
@@ -26,7 +26,6 @@ function executeTests() {
         failed: 0,
         errors: 0,
         score: 0,
-        details: [],
         publicTests: {
             total: publicTestCases.length,
             passed: 0
@@ -39,29 +38,15 @@ function executeTests() {
     
     allTestCases.forEach((testCase, index) => {
         const isPublic = index < publicTestCases.length;
-        const testResult = {
-            index: index + 1,
-            description: testCase.description || `Test case ${index + 1}`,
-            status: 'failed',
-            expected: testCase.expected,
-            actual: null,
-            error: null,
-            isPublic: isPublic,
-            executionTime: 0
-        };
-        
-        const startTime = process.hrtime.bigint();
         
         try {
-            const result = {{function_name}}(...testCase.input);
-            const endTime = process.hrtime.bigint();
-            testResult.executionTime = Number(endTime - startTime) / 1000000; // Convert to milliseconds
-            testResult.actual = result;
+            // Handle the input structure - extract values from the input object
+            const inputValues = Object.values(testCase.input);
+            const result = {{function_name}}(...inputValues);
             
             // Use assert for deep comparison
-            assert.deepStrictEqual(result, testCase.expected);
+            assert.deepStrictEqual(result, testCase.output);
             
-            testResult.status = 'passed';
             results.passed++;
             
             if (isPublic) {
@@ -70,21 +55,12 @@ function executeTests() {
                 results.privateTests.passed++;
             }
         } catch (error) {
-            const endTime = process.hrtime.bigint();
-            testResult.executionTime = Number(endTime - startTime) / 1000000;
-            
             if (error instanceof assert.AssertionError) {
-                testResult.status = 'failed';
-                testResult.error = `Assertion failed: Expected ${JSON.stringify(testCase.expected)}, got ${JSON.stringify(testResult.actual)}`;
                 results.failed++;
             } else {
-                testResult.status = 'error';
-                testResult.error = error.message;
                 results.errors++;
             }
         }
-        
-        results.details.push(testResult);
     });
     
     // Calculate score (percentage of passed tests)
@@ -93,7 +69,7 @@ function executeTests() {
     return results;
 }
 
-// Execute tests and return results
+// Execute tests and return summary results
 try {
     const testResults = executeTests();
     console.log(JSON.stringify(testResults, null, 2));
@@ -110,7 +86,6 @@ try {
         failed: 0,
         errors: allTestCases.length,
         score: 0,
-        details: [],
         publicTests: { total: publicTestCases.length, passed: 0 },
         privateTests: { total: privateTestCases.length, passed: 0 },
         globalError: error.message

@@ -56,7 +56,7 @@ export class SolutionExecutionController {
 
       let template_name =
         type == 'full'
-          ? 'solution_with_full_cases.hbs'
+          ? 'solution_with_private_cases.hbs'
           : 'solution_with_public_cases.hbs';
 
       const code_template_generation =

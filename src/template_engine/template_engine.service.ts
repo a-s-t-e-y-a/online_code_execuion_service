@@ -141,6 +141,7 @@ export class TemplateServerCumMiddlewareService {
             function_name,
             parameters,
           });
+          
           return {
             problem_id,
             code_snippet: result.content,
@@ -193,7 +194,6 @@ export class TemplateServerCumMiddlewareService {
           problem_id,
           template_name,
           language,
-          // description,
           function_name,
           parameters,
           public_test_cases: effectivePublicTestCases,
@@ -227,7 +227,6 @@ export class TemplateServerCumMiddlewareService {
       problem_id,
       template_name,
       language,
-      // description,
       function_name,
       parameters,
       public_test_cases,
@@ -251,17 +250,17 @@ export class TemplateServerCumMiddlewareService {
       template = handlebars.compile(templateContent);
       this.templateCache.set(cacheKey, template);
     }
-
+    
     const templateData = {
-      // description,
       function_name,
       parameters,
       public_test_cases,
       private_test_cases,
-      user_code: user_code ? atob(user_code) : '', // Decode base64 user code here
+      user_code: user_code ? atob(user_code) : '', // Decode base64 user code
       has_user_code: !!user_code,
     };
     const generatedCode = template(templateData);
+    console.log(generatedCode)
     const languageConfig = languages.find(
       (lang) => lang.name.toLowerCase() === language.toLowerCase(),
     );

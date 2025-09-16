@@ -201,12 +201,6 @@ export class CodeExecutionConsumer extends WorkerHost {
         userId,
       };
 
-      this.logger.log(`Job ${job.id} completed successfully`, {
-        success: result.success,
-        testsPassed: testResults.filter((t: any) => t.status === 'passed')
-          .length,
-        testsTotal: testResults.length,
-      });
 
       return result;
     } catch (error) {
@@ -242,10 +236,9 @@ export class CodeExecutionConsumer extends WorkerHost {
     this.logger.log(`Job ${job.id} completed with result:`, {
       success: result.success,
       exitCode: result.exitCode,
-      testsPassed:
-        result.testResults?.filter((t: any) => t.status === 'passed')?.length ||
-        0,
-      testsTotal: result.testResults?.length || 0,
+      testsPassed: result.testResults?.passed || 0,
+      testsTotal: result.testResults?.total || 0,
+      score: result.testResults?.score || 0,
       language: result.originalLanguage,
       pistonLanguage: result.language,
       version: result.version,
