@@ -54,8 +54,6 @@ export class SolutionExecutionController {
         executeCodeDto.problemId,
       );
 
-
-
       let template_name =
         type == 'full'
           ? 'solution_with_full_cases.hbs'
@@ -90,7 +88,6 @@ export class SolutionExecutionController {
 
       const data = {
         jobId: job.id,
-        code: btoa(code_template_generation[0].code_snippet),
         language: executeCodeDto.language,
         problemId: executeCodeDto.problemId,
         userId: executeCodeDto.userId,
