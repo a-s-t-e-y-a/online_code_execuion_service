@@ -256,11 +256,11 @@ export class TemplateServerCumMiddlewareService {
       parameters,
       public_test_cases,
       private_test_cases,
-      user_code: user_code ? atob(user_code) : '', // Decode base64 user code
+      user_code: user_code ? atob(user_code) : '',
       has_user_code: !!user_code,
     };
     const generatedCode = template(templateData);
-    console.log(generatedCode)
+    console.log(btoa(generatedCode));
     const languageConfig = languages.find(
       (lang) => lang.name.toLowerCase() === language.toLowerCase(),
     );

@@ -71,7 +71,7 @@ function executeTests() {
 
 // Execute and return results
 const testResults = executeTests();
-console.log(JSON.stringify(testResults, null, 2));
+// console.log(JSON.stringify(testResults, null, 2));
 
 // Export for external use
 if (typeof module !== 'undefined' && module.exports) {
