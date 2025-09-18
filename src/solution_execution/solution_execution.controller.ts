@@ -88,6 +88,7 @@ export class SolutionExecutionController {
 
       const data = {
         jobId: job.id,
+        code: code_template_generation,
         language: executeCodeDto.language,
         problemId: executeCodeDto.problemId,
         userId: executeCodeDto.userId,
