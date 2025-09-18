@@ -5,6 +5,8 @@ import { JobSchedulingModule } from '../job_scheduling/job_scheduling.module';
 import { TemplateServerCumMiddlewareService } from 'src/template_engine/template_engine.service';
 import { DrizzleModule } from 'src/drizzle/drizzle.module';
 import { ProblemService } from 'src/problem/problem.service';
+import { CommonUseServiceService } from 'src/common.use.service/common.use.service.service';
+import { FileManagerService } from 'src/file_manager/file_manager.service';
 
 @Module({
   imports: [JobSchedulingModule, DrizzleModule],
@@ -13,6 +15,8 @@ import { ProblemService } from 'src/problem/problem.service';
     SolutionExecutionService,
     TemplateServerCumMiddlewareService,
     ProblemService,
+    CommonUseServiceService,
+    FileManagerService,
   ],
 })
 export class SolutionExecutionModule {}

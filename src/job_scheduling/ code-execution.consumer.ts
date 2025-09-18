@@ -1,55 +1,13 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
 import { Injectable, Logger } from '@nestjs/common';
 import { Job } from 'bullmq';
-import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
+import { promisify } from 'util';
+import { exec } from 'child_process';
 import mapLanguageToPiston from '../config/piston.runtime.map';
 
-interface PistonExecuteRequest {
-  language: string;
-  version: string;
-  files: Array<{
-    name?: string;
-    content: string;
-    encoding?: 'base64' | 'hex' | 'utf8'; // Fix: use 'encoding' not 'encode'
-  }>;
-  stdin?: string;
-  args?: string[];
-  compile_timeout?: number;
-  run_timeout?: number;
-  compile_cpu_time?: number;
-  run_cpu_time?: number;
-  compile_memory_limit?: number;
-  run_memory_limit?: number;
-}
-
-interface PistonExecuteResponse {
-  language: string;
-  version: string;
-  run: {
-    stdout: string;
-    stderr: string;
-    output: string;
-    code: number;
-    signal: string | null;
-    message: string | null;
-    status: string | null;
-    cpu_time: number;
-    wall_time: number;
-    memory: number;
-  };
-  compile?: {
-    stdout: string;
-    stderr: string;
-    output: string;
-    code: number;
-    signal: string | null;
-    message: string | null;
-    status: string | null;
-    cpu_time: number;
-    wall_time: number;
-    memory: number;
-  };
-}
+const execAsync = promisify(exec);
 
 @Injectable()
 @Processor('code-execution', {
@@ -57,7 +15,6 @@ interface PistonExecuteResponse {
 })
 export class CodeExecutionConsumer extends WorkerHost {
   private readonly logger = new Logger(CodeExecutionConsumer.name);
-  private readonly pistonApiUrl = 'http://localhost:2000/api/v2';
 
   async process(job: Job<any, any, string>): Promise<any> {
     this.logger.log(`Processing job ${job.id} of type ${job.name}`);
@@ -71,101 +28,45 @@ export class CodeExecutionConsumer extends WorkerHost {
   }
 
   private async executeCode(job: Job) {
-    const { code, language, problemId, userId } = job.data;
+    const { code, language, problemId, userId, pathToFile, fileName } =
+      job.data;
 
     try {
-      const languageMapping = mapLanguageToPiston.find(
-        (mapping) => mapping.runtime.toLowerCase() === language.toLowerCase(),
-      );
-
-      if (!languageMapping) {
+      if (language.toLowerCase() !== 'javascript') {
         throw new Error(
-          `Unsupported language: ${language}. Available languages: ${mapLanguageToPiston.map((m) => m.runtime).join(', ')}`,
+          `CLI execution currently only supports JavaScript. Language: ${language}`,
         );
       }
 
-      const { piston: pistonLanguage, runtime_version: pistonVersion } =
-        languageMapping;
+      const pistonCliPath =
+        process.env.PISTON_CLI_PATH || '/path/to/piston/cli/index.js';
 
-      this.logger.log(
-        `Mapped ${language} to Piston language: ${pistonLanguage} version: ${pistonVersion}`,
-      );
+      const cliCommand = `${pistonCliPath} run javascript "${pathToFile}" -l 20.11.1`;
 
-      const getFileExtension = (lang: string): string => {
-        const extensions: Record<string, string> = {
-          javascript: 'js',
-          python: 'py',
-          java: 'java',
-          cpp: 'cpp',
-          'c++': 'cpp',
-          c: 'c',
-          go: 'go',
-          rust: 'rs',
-          php: 'php',
-          ruby: 'rb',
-          swift: 'swift',
-          kotlin: 'kt',
-          csharp: 'cs',
-          bash: 'sh',
-          typescript: 'ts',
-        };
-        return extensions[lang.toLowerCase()] || 'txt';
-      };
+      this.logger.log(`Executing CLI command: ${cliCommand}`);
 
-      const pistonRequest: PistonExecuteRequest = {
-        language: pistonLanguage,
-        version: pistonVersion,
-        files: [
-          {
-            name: `solution.${getFileExtension(language)}`,
-            content: atob(code), // Decode base64 to plain text
-            encoding: 'utf8', // Send as plain text
-          },
-        ],
-        stdin: '',
-        args: [],
-        compile_timeout: 10000,
-        run_timeout: 3000,
-        compile_cpu_time: 3000,
-        run_cpu_time: 3000,
-        compile_memory_limit: 128000000,
-        run_memory_limit: 128000000,
-      };
+      const startTime = Date.now();
 
-      this.logger.log('Sending request to Piston API...', {
-        language: pistonLanguage,
-        version: pistonVersion,
-        fileName: pistonRequest.files[0].name,
+
+      const { stdout, stderr } = await execAsync(cliCommand, {
+        timeout: 30000, 
+        maxBuffer: 1024 * 1024 * 10,
       });
 
-      // Execute code via Piston API
-      const response = await axios.post<PistonExecuteResponse>(
-        `${this.pistonApiUrl}/execute`,
-        pistonRequest,
-        {
-          timeout: 30000, // 30 seconds timeout for the HTTP request
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        },
-      );
+      const executionTime = Date.now() - startTime;
 
-      const pistonResult = response.data;
-
-      this.logger.log('Piston execution completed', {
-        exitCode: pistonResult.run.code,
-        signal: pistonResult.run.signal,
-        status: pistonResult.run.status,
-        executionTime: pistonResult.run.wall_time,
-        memoryUsed: pistonResult.run.memory,
+      this.logger.log('CLI execution completed', {
+        executionTime,
+        hasStdout: !!stdout,
+        hasStderr: !!stderr,
       });
 
       // Parse test results from stdout if it contains JSON
       let testResults = [];
       try {
-        const stdout = pistonResult.run.stdout.trim();
-        if (stdout.startsWith('{') || stdout.startsWith('[')) {
-          const parsed = JSON.parse(stdout);
+        const output = stdout.trim();
+        if (output.startsWith('{') || output.startsWith('[')) {
+          const parsed = JSON.parse(output);
           testResults = parsed.details || parsed || [];
         }
       } catch (parseError) {
@@ -175,51 +76,43 @@ export class CodeExecutionConsumer extends WorkerHost {
         );
       }
 
+      // Determine success based on stderr presence and test results
+      const hasErrors = stderr && stderr.trim().length > 0;
+      const success =
+        !hasErrors &&
+        (testResults.length > 0
+          ? testResults.every((test: any) => test.passed)
+          : true);
+
       // Prepare result
       const result = {
-        success: pistonResult.run.code === 0 && !pistonResult.run.signal,
-        output: pistonResult.run.stdout,
-        error: pistonResult.run.stderr,
-        executionTime: pistonResult.run.wall_time,
-        memoryUsed: pistonResult.run.memory,
-        cpuTime: pistonResult.run.cpu_time,
-        exitCode: pistonResult.run.code,
-        signal: pistonResult.run.signal,
-        status: pistonResult.run.status,
+        success,
+        output: stdout,
+        error: stderr,
+        executionTime,
+        memoryUsed: 0, // Not available in CLI mode
+        cpuTime: executionTime,
+        exitCode: hasErrors ? 1 : 0,
+        signal: null,
+        status: hasErrors ? 'error' : 'success',
         testResults: testResults,
-        // Include compile info if available
-        ...(pistonResult.compile && {
-          compileOutput: pistonResult.compile.stdout,
-          compileError: pistonResult.compile.stderr,
-          compileTime: pistonResult.compile.wall_time,
-          compileExitCode: pistonResult.compile.code,
-        }),
-        language: pistonResult.language,
-        version: pistonResult.version,
+        language: language,
+        version: '20.11.1',
         originalLanguage: language,
         problemId,
         userId,
+        executionMethod: 'cli',
       };
-
 
       return result;
     } catch (error) {
       this.logger.error(`Job ${job.id} failed:`, error);
 
       // Handle different types of errors
-      if (axios.isAxiosError(error)) {
-        const axiosError = error;
-        if (axiosError.response) {
-          // Piston API returned an error
-          this.logger.error('Piston API error:', axiosError.response.data);
-          throw new Error(
-            `Piston API error: ${axiosError.response.data.message || 'Unknown error'}`,
-          );
-        } else if (axiosError.request) {
-          // Network error
-          this.logger.error('Network error connecting to Piston API');
-          throw new Error('Failed to connect to code execution service');
-        }
+      if (error.code === 'ETIMEDOUT') {
+        throw new Error('Code execution timed out');
+      } else if (error.code === 'ENOTFOUND' || error.code === 'ENOENT') {
+        throw new Error('Piston CLI not found or not accessible');
       }
 
       throw error;

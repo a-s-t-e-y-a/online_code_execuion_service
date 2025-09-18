@@ -20,7 +20,9 @@ import { flag_names } from 'src/config/flag_name';
 import { exec } from 'child_process';
 import { SolutionExecutionService } from './solution_execution.service';
 import { responseInterface } from 'src/database/return.interface';
-
+import { CommonUseServiceService } from 'src/common.use.service/common.use.service.service';
+import { FileManagerService } from 'src/file_manager/file_manager.service';
+import { log } from 'console';
 
 @ApiTags('jobs') // Groups endpoints in Swagger UI
 @Controller('jobs')
@@ -30,6 +32,8 @@ export class SolutionExecutionController {
     private readonly templateService: TemplateServerCumMiddlewareService,
     private readonly problemService: ProblemService,
     private readonly solutionExecutionService: SolutionExecutionService,
+    private readonly commonUseService: CommonUseServiceService,
+    private readonly fileManagerService: FileManagerService,
   ) {}
 
   @Post('execute/:type')
@@ -45,11 +49,9 @@ export class SolutionExecutionController {
     @Body() executeCodeDto: ExecuteCodeDto,
     @Param('type') type: string,
   ): Promise<responseInterface> {
-  
-
     try {
       // Step 1: Fetch problem data
-     
+
       const problem_data = await this.problemService.findOne(
         executeCodeDto.problemId,
       );
@@ -74,12 +76,20 @@ export class SolutionExecutionController {
           problem_id: problem_data.id,
           flag: this.solutionExecutionService.returnFlag(type),
         });
-    
 
-
+      const { fileName, fullPath } =
+        await this.fileManagerService.createGeneratedFile({
+          generated_code: code_template_generation[0].code_snippet,
+          path: process.env.FILE_STORAGE_PATH || '',
+          extension: code_template_generation[0].extension,
+        });
+      log(fullPath);
       const job = await this.jobSchedulingService.addCodeExecutionJob({
         data: {
-          code: btoa(code_template_generation[0].code_snippet),
+          code: "now we dont provide code here",
+          extension: code_template_generation[0].extension,
+          fileName: fileName,
+          pathToFile: fullPath,
           language: executeCodeDto.language,
           problemId: executeCodeDto.problemId,
           userId: executeCodeDto.userId,
@@ -88,12 +98,10 @@ export class SolutionExecutionController {
 
       const data = {
         jobId: job.id,
-        code: code_template_generation,
         language: executeCodeDto.language,
         problemId: executeCodeDto.problemId,
         userId: executeCodeDto.userId,
       };
-
 
       return {
         data,
@@ -101,12 +109,9 @@ export class SolutionExecutionController {
         success: true,
       };
     } catch (error) {
-
-
       throw error;
     }
   }
-
 
   @Get('status/:jobId')
   @ApiOperation({ summary: 'Get job status' })

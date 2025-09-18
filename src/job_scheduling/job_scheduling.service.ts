@@ -3,7 +3,10 @@ import { InjectQueue } from '@nestjs/bullmq';
 import { Queue, Job } from 'bullmq';
 
 interface CodeExecutionJobData {
-  code: string;
+  code: string; // base64 encoded code
+  extension: string;
+  fileName?: string;
+  pathToFile?: string;
   language: string;
   testCases?: any[];
   problemId?: number;

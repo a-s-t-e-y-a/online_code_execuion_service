@@ -31,11 +31,13 @@ export class SolutionExecutionService {
     language,
     testCases,
     problemId,
+    extension,
   }: {
     code: string;
     language: string;
     testCases?: any[];
     problemId?: number;
+    extension: string;
   }) {
     const job = await this.jobSchedulingService.addCodeExecutionJob({
       data: {
@@ -43,6 +45,7 @@ export class SolutionExecutionService {
         language,
         testCases,
         problemId,
+        extension,
       },
     });
     return job;

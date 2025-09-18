@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, OnModuleInit } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -13,6 +13,9 @@ import { BullModule } from '@nestjs/bullmq';
 import { JobSchedulingModule } from './job_scheduling/job_scheduling.module';
 import { SolutionExecutionModule } from './solution_execution/solution_execution.module';
 import { CommonUseServiceService } from './common.use.service/common.use.service.service';
+import { FileManagerModule } from './file_manager/file_manager.module';
+import { join } from 'path';
+import fs from 'fs';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -31,7 +34,7 @@ import { CommonUseServiceService } from './common.use.service/common.use.service
         };
       },
     }),
-   BullModule.forRoot({
+    BullModule.forRoot({
       connection: {
         host: 'localhost',
         port: 6379,
@@ -43,8 +46,33 @@ import { CommonUseServiceService } from './common.use.service/common.use.service
     TemplateServerCumMiddlewareModule,
     JobSchedulingModule,
     SolutionExecutionModule,
+    FileManagerModule,
   ],
   controllers: [AppController],
   providers: [AppService, CommonUseServiceService],
 })
-export class AppModule { }
+export class AppModule implements OnModuleInit {
+  async onModuleInit() {
+    await this.makeDirectory();
+  }
+
+  async makeDirectory() {
+    if (fs.existsSync(process.env.FILE_STORAGE_PATH || '')) {
+      console.log('Directory already exists');
+      return;
+    } else {
+      try {
+        const dirCreation = await fs.mkdirSync(
+          process.env.FILE_STORAGE_PATH || '',
+          {
+            recursive: true,
+          },
+        );
+        console.log('Directory created:', dirCreation);
+        return dirCreation;
+      } catch (err) {
+        console.error('Error creating directory:', err);
+      }
+    }
+  }
+}
