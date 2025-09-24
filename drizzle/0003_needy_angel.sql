@@ -1,1 +1,0 @@
-ALTER TABLE "boiler_plate_snippet" ADD COLUMN "extension" text NOT NULL;

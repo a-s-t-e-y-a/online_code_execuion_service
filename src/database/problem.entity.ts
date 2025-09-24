@@ -15,11 +15,19 @@ export const problem_entity = pgTable('problem_entity', {
     title: text('title').notNull(),
     difficulty: difficultyEnum('difficulty').notNull(),
     function_name: text('function_name').notNull(),
-    parameters_number: text('parameters_number').notNull(),
-    parameters: jsonb('parameters').$type<Parameter[]>().default([]),
+    parameters_number: integer('parameters_number').notNull(),
     public_test_cases: text('public_test_cases').notNull(),
-    private_test_cases: text('private_test_cases').notNull(), 
+    private_test_cases: text('private_test_cases').notNull(),
     ...common_entity
+});
+
+export const language_specific_parameters = pgTable('language_specific_parameters', {
+  id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
+  problem_id: integer('problem_id').notNull().references(() => problem_entity.id),
+  language: text('language').notNull(),
+  return_type: text('return_type').notNull(),
+  parameters: jsonb('parameters').$type<Parameter[]>().default([]),
+  ...common_entity
 });
 
 export const boiler_plate_snippet = pgTable('boiler_plate_snippet', {
@@ -33,12 +41,20 @@ export const boiler_plate_snippet = pgTable('boiler_plate_snippet', {
 
 
 export const problemRelations = relations(problem_entity, ({ many }) => ({
-  boilerPlateSnippets: many(boiler_plate_snippet)
+  boilerPlateSnippets: many(boiler_plate_snippet),
+  languageSpecificParameters: many(language_specific_parameters)
 }));
 
 export const boilerPlateSnippetRelations = relations(boiler_plate_snippet, ({ one }) => ({
   problem: one(problem_entity, {
     fields: [boiler_plate_snippet.problem_id],
+    references: [problem_entity.id]
+  })
+}));
+
+export const languageSpecificParametersRelations = relations(language_specific_parameters, ({ one }) => ({
+  problem: one(problem_entity, {
+    fields: [language_specific_parameters.problem_id],
     references: [problem_entity.id]
   })
 }));

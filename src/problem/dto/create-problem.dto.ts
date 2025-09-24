@@ -1,6 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsArray, IsNotEmpty, IsIn, ValidateNested, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsArray,
+  IsNotEmpty,
+  IsIn,
+  ValidateNested,
+  IsOptional,
+  IsNumber,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
+import { cppTypeEnum } from '../../config/cpp_type_mappings';
 
 class ParameterDto {
   @IsString()
@@ -9,6 +18,7 @@ class ParameterDto {
 
   @IsString()
   @IsNotEmpty()
+  @IsIn(Object.keys(cppTypeEnum))
   type: string;
 }
 
@@ -23,7 +33,8 @@ export class CreateProblemDto {
 
   @ApiProperty({
     description: 'The description of the problem',
-    example: 'Given an array of integers, return indices of two numbers that add up to target.',
+    example:
+      'Given an array of integers, return indices of two numbers that add up to target.',
   })
   @IsString()
   @IsNotEmpty()
@@ -51,7 +62,7 @@ export class CreateProblemDto {
     description: 'Array of function parameters with name and type',
     example: [
       { name: 'nums', type: 'number[]' },
-      { name: 'target', type: 'number' }
+      { name: 'target', type: 'number' },
     ],
     type: [Object],
   })
@@ -96,4 +107,19 @@ export class CreateProblemDto {
   @IsOptional()
   @IsArray()
   private_test_cases?: any[];
+
+  @ApiProperty({
+    description: 'C++ return type of the function',
+    example: 'int',
+  })
+  @IsString()
+  @IsNotEmpty()
+  return_type: string;
+
+  @ApiProperty({
+    description: 'The paramters number of the function',
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  parameters_number: number;
 }

@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateProblemDto } from './create-problem.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsArray, IsOptional, IsIn, ValidateNested, IsNotEmpty } from 'class-validator';
+import { IsString, IsArray, IsOptional, IsIn, ValidateNested, IsNotEmpty, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ParameterDto {
@@ -54,8 +54,8 @@ export class UpdateProblemDto extends PartialType(CreateProblemDto) {
     example: '2',
   })
   @IsOptional()
-  @IsString()
-  parameters_number?: string;
+  @IsNumber()
+  parameters_number?: number;
 
   @ApiPropertyOptional({
     description: 'Array of function parameters with name and type',
