@@ -46,6 +46,7 @@ interface GenerateTemplateEngineParams {
   description?: string;
   function_name: string;
   parameters: Parameter[];
+  return_type: string;
   public_test_cases?: TestCase[];
   private_test_cases?: TestCase[];
   user_code?: string;
@@ -145,6 +146,7 @@ export class TemplateServerCumMiddlewareService {
           description,
           function_name,
           parameters: langParam.parameters || [],
+          return_type: langParam.return_type,
         });
         
         return {
@@ -216,6 +218,7 @@ export class TemplateServerCumMiddlewareService {
         language,
         function_name,
         parameters: langParam[0].parameters || [],
+        return_type: langParam[0].return_type,
         public_test_cases: effectivePublicTestCases,
         private_test_cases: effectivePrivateTestCases,
         user_code,
@@ -246,6 +249,7 @@ export class TemplateServerCumMiddlewareService {
       language,
       function_name,
       parameters,
+      return_type,
       public_test_cases,
       private_test_cases,
       user_code,
@@ -271,6 +275,7 @@ export class TemplateServerCumMiddlewareService {
     const templateData = {
       function_name,
       parameters,
+      return_type,
       public_test_cases,
       private_test_cases,
       user_code: user_code ? atob(user_code) : '',
