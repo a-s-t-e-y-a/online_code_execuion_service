@@ -27,7 +27,7 @@ CREATE TABLE "problem_entity" (
 	"title" text NOT NULL,
 	"difficulty" "difficulty" NOT NULL,
 	"function_name" text NOT NULL,
-	"parameters_number" text NOT NULL,
+	"parameters_number" integer NOT NULL,
 	"public_test_cases" text NOT NULL,
 	"private_test_cases" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,

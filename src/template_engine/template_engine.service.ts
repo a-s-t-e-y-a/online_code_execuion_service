@@ -30,7 +30,7 @@ interface GenerateTemplateParams {
   template_name: string;
   description?: string;
   function_name: string;
-  parameters: Parameter[];
+  parameters?: Parameter[];
   public_test_cases_url?: string;
   private_test_cases_url?: string;
   problem_id: number;
@@ -75,6 +75,11 @@ export class TemplateServerCumMiddlewareService {
     // Register JSON helper for serializing objects in templates
     handlebars.registerHelper('json', function (context) {
       return JSON.stringify(context);
+    });
+
+    // Register escaped JSON helper for Java templates
+    handlebars.registerHelper('jsonEscaped', function (context) {
+      return JSON.stringify(context).replace(/"/g, '\\"');
     });
   }
 
@@ -272,14 +277,36 @@ export class TemplateServerCumMiddlewareService {
       this.templateCache.set(cacheKey, template);
     }
     
+    const decodedUserCode = user_code ? atob(user_code) : '';
+    
+    // Extract class name from user code for dynamic naming (Java only)
+    let className = 'Solution'; // default fallback
+    let modifiedUserCode = decodedUserCode;
+    
+    if (language.toLowerCase() === 'java') {
+      if (decodedUserCode) {
+        const classMatch = decodedUserCode.match(/public\s+class\s+(\w+)/);
+        if (classMatch) {
+          className = classMatch[1];
+        }
+      }
+      
+      // Add main method to the user code if it doesn't have one
+      if (decodedUserCode && !decodedUserCode.includes('public static void main')) {
+        // Insert main method before the closing brace of the class
+        modifiedUserCode = decodedUserCode.replace(/}(\s*)$/, '\n\n    public static void main(String[] args) {\n        TestRunner.main(args);\n    }\n}');
+      }
+    }
+    
     const templateData = {
       function_name,
       parameters,
       return_type,
       public_test_cases,
       private_test_cases,
-      user_code: user_code ? atob(user_code) : '',
+      user_code: modifiedUserCode,
       has_user_code: !!user_code,
+      class_name: className,
     };
     const generatedCode = template(templateData);
     console.log(btoa(generatedCode));
@@ -287,7 +314,8 @@ export class TemplateServerCumMiddlewareService {
       (lang) => lang.name.toLowerCase() === language.toLowerCase(),
     );
     const extension = languageConfig?.extension || 'js';
-    const filename = `${problem_id}_${function_name}_solution.${extension}`;
+    // Use extracted class name for filename to match the actual class name
+    const filename = language.toLowerCase() === 'java' ? `${className}.${extension}` : `${problem_id}_${function_name}_solution.${extension}`;
     return {
       filename,
       content: generatedCode,

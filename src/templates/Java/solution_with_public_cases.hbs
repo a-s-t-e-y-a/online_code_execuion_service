@@ -1,0 +1,30 @@
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+{{{user_code}}}
+
+class TestRunner {
+    // Public test cases JSON string
+    private static final String publicTestCasesJson = "{{{jsonEscaped public_test_cases}}}";
+
+    public static void main(String[] args) {
+        JSONArray testCases = new JSONArray(publicTestCasesJson);
+        int passed = 0;
+        int total = testCases.length();
+        for (int i = 0; i < total; i++) {
+            JSONObject testCase = testCases.getJSONObject(i);
+            JSONObject inputObj = testCase.getJSONObject("input");
+            String param = inputObj.getString("{{{parameters.0.name}}}");
+            {{{class_name}}} sol = new {{{class_name}}}();
+            int result = sol.{{{function_name}}}(param);
+            int expected = testCase.getInt("output");
+            if (result == expected) {
+                System.out.println("Test Case " + (i + 1) + ": Passed");
+                passed++;
+            } else {
+                System.out.println("Test Case " + (i + 1) + ": Failed - Expected " + expected + ", Got " + result);
+            }
+        }
+        System.out.println("\nSummary: " + passed + "/" + total + " tests passed.");
+    }
+}

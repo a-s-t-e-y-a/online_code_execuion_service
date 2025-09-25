@@ -1,0 +1,52 @@
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+{{{user_code}}}
+
+class TestRunner {
+    // Public test cases JSON string
+    private static final String publicTestCasesJson = "{{{jsonEscaped public_test_cases}}}";
+
+    // Private test cases JSON string
+    private static final String privateTestCasesJson = "{{{jsonEscaped private_test_cases}}}";
+
+    public static void main(String[] args) {
+        // Public test cases
+        JSONArray publicTestCases = new JSONArray(publicTestCasesJson);
+        int publicPassed = 0;
+        int publicTotal = publicTestCases.length();
+        System.out.println("Public Test Cases:");
+        for (int i = 0; i < publicTotal; i++) {
+            JSONObject testCase = publicTestCases.getJSONObject(i);
+            JSONObject inputObj = testCase.getJSONObject("input");
+            String param = inputObj.getString("{{{parameters.0.name}}}");
+            {{{class_name}}} sol = new {{{class_name}}}();
+            int result = sol.{{{function_name}}}(param);
+            int expected = testCase.getInt("output");
+            if (result == expected) {
+                System.out.println("Test Case " + (i + 1) + ": Passed");
+                publicPassed++;
+            } else {
+                System.out.println("Test Case " + (i + 1) + ": Failed - Expected " + expected + ", Got " + result);
+            }
+        }
+        System.out.println("\nPublic Summary: " + publicPassed + "/" + publicTotal + " tests passed.");
+
+        // Private test cases
+        JSONArray privateTestCases = new JSONArray(privateTestCasesJson);
+        int privatePassed = 0;
+        int privateTotal = privateTestCases.length();
+        for (int i = 0; i < privateTotal; i++) {
+            JSONObject testCase = privateTestCases.getJSONObject(i);
+            JSONObject inputObj = testCase.getJSONObject("input");
+            String param = inputObj.getString("{{{parameters.0.name}}}");
+            {{{class_name}}} sol = new {{{class_name}}}();
+            int result = sol.{{{function_name}}}(param);
+            int expected = testCase.getInt("output");
+            if (result == expected) {
+                privatePassed++;
+            }
+        }
+        System.out.println("Private tests: " + privatePassed + " passed, " + (privateTotal - privatePassed) + " failed.");
+    }
+}

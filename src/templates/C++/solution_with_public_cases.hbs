@@ -1,0 +1,37 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include "json.hpp"
+
+using json = nlohmann::json;
+
+{{{user_code}}}
+
+// Public test cases JSON string
+const std::string publicTestCasesJson = R"({{{json public_test_cases}}})";
+
+// Test execution function
+void executeTests() {
+    json testCases = json::parse(publicTestCasesJson);
+    int passed = 0;
+    int total = testCases.size();
+    for (size_t i = 0; i < testCases.size(); ++i) {
+        auto &testCase = testCases[i];
+        Solution sol;
+        auto res = sol.{{{function_name}}}(testCase["input"]["{{{parameters.0.name}}}"]);
+        auto expected = testCase["output"];
+        if (res == expected) {
+            std::cout << "Test Case " << (i + 1) << ": Passed" << std::endl;
+            passed++;
+        } else {
+            std::cout << "Test Case " << (i + 1) << ": Failed - Expected " << expected << ", Got " << res << std::endl;
+        }
+    }
+    std::cout << "\nSummary: " << passed << "/" << total << " tests passed." << std::endl;
+}
+
+int main() {
+    executeTests();
+    return 0;
+}

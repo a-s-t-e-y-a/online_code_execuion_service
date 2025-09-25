@@ -1,12 +1,12 @@
 const mapLanguageToPiston = [
     {
         runtime: 'c',
-        piston: 'gcc',
+        piston: 'c',
         runtime_version:'10.2.0'
     },
     {
         runtime: 'c++',
-        piston: 'gcc',
+        piston: 'cpp',
         runtime_version:'10.2.0'
     },
     {
@@ -20,9 +20,19 @@ const mapLanguageToPiston = [
         runtime_version:'15.0.2'
     },
     {
-        runtime: 'node',
+        runtime: 'js',
         piston: 'javascript',
         runtime_version:'20.11.1'
+    },
+    {
+        runtime: 'javascript',
+        piston: 'javascript', 
+        runtime_version:'20.11.1'
+    },
+    {
+        runtime: 'py',
+        piston: 'python',
+        runtime_version:'3.12.0'
     },
     {
         runtime: 'python',

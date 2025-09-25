@@ -66,10 +66,6 @@ export class SolutionExecutionController {
           template_name: template_name,
           function_name: problem_data.function_name,
           language: executeCodeDto.language,
-          parameters: problem_data.parameters.map((param) => ({
-            name: param.name,
-            type: param.type,
-          })),
           public_test_cases_url: problem_data.public_test_cases,
           private_test_cases_url: problem_data.private_test_cases,
           user_code: executeCodeDto.code,

@@ -1,5 +1,5 @@
 {
-  "id": "d36a9032-8fa7-47a5-8909-ed6042c0ce4d",
+  "id": "dda42477-1077-48d3-8214-6d540bb335f1",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -229,7 +229,7 @@
         },
         "parameters_number": {
           "name": "parameters_number",
-          "type": "text",
+          "type": "integer",
           "primaryKey": false,
           "notNull": true
         },

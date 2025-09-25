@@ -1,0 +1,46 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "cJSON.h"
+
+{{{user_code}}}
+
+// Public test cases JSON string
+const char* publicTestCasesJson = "{{{json public_test_cases}}}";
+
+// Test execution function
+void executeTests() {
+    cJSON* root = cJSON_Parse(publicTestCasesJson);
+    if (!root) {
+        printf("{\"error\": \"Failed to parse test cases JSON\"}\n");
+        return;
+    }
+
+    int total = cJSON_GetArraySize(root);
+    int passed = 0;
+    int failed = 0;
+    int errors = 0;
+
+    printf("{\"total\": %d, \"passed\": %d, \"failed\": %d, \"errors\": %d, \"details\": [", total, passed, failed, errors);
+
+    for (int i = 0; i < total; i++) {
+        cJSON* testCase = cJSON_GetArrayItem(root, i);
+        cJSON* input = cJSON_GetObjectItem(testCase, "input");
+        cJSON* output = cJSON_GetObjectItem(testCase, "output");
+
+        // Assume simple types for now; extend as needed
+        // For example, if input is array of ints, etc.
+        // This is a placeholder - actual implementation depends on types
+
+        printf("{\"index\": %d, \"status\": \"not_implemented\"}", i + 1);
+        if (i < total - 1) printf(",");
+    }
+
+    printf("]}\n");
+    cJSON_Delete(root);
+}
+
+int main() {
+    executeTests();
+    return 0;
+}

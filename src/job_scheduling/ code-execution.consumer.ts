@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
 import { exec } from 'child_process';
+import axios from 'axios';
 import mapLanguageToPiston from '../config/piston.runtime.map';
 
 const execAsync = promisify(exec);
@@ -32,24 +33,105 @@ export class CodeExecutionConsumer extends WorkerHost {
       job.data;
 
     try {
-      if (language.toLowerCase() !== 'javascript') {
-        throw new Error(
-          `CLI execution currently only supports JavaScript. Language: ${language}`,
-        );
+      // Read the file content
+      const content = fs.readFileSync(pathToFile, 'utf8');
+      
+
+      // Find the mapping
+      const mapping = mapLanguageToPiston.find(m => m.runtime === language.toLowerCase());
+      if (!mapping) {
+        throw new Error(`Unsupported language: ${language}`);
       }
 
+      const pistonLanguage = mapping.piston;
+      const version = mapping.runtime_version;
+
+      // Try API first
+      try {
+        const apiUrl = 'http://210.79.129.22:2000/api/v2/execute';
+        
+        // Use Base64 encoding to avoid JSON escaping issues
+        const contentBase64 = Buffer.from(content, 'utf8').toString('base64');
+        
+        const payload = {
+          language: pistonLanguage === 'javascript' ? 'js' : "cpp",
+          version: version,
+          files: [
+            {
+              name: fileName,
+              content: contentBase64,
+              encoding: 'base64'
+            },
+          ],
+          stdin: '',
+          args: [],
+          compile_timeout: 10000,
+          run_timeout: 3000,
+          compile_cpu_time: 10000,
+          run_cpu_time: 3000,
+          compile_memory_limit: -1,
+          run_memory_limit: -1,
+        };
+        console.log("payload", payload);
+        this.logger.log(`Trying API for language ${language}`);
+
+        const response = await axios.post(apiUrl, payload, { timeout: 60000 });
+        
+        const data = response.data;
+        if (data.compile && data.compile.code !== 0) {
+          throw new Error(`Compile failed: ${data.compile.stderr || data.compile.message}`);
+        }
+        const run = data.run;
+
+        // Parse test results if present
+        let testResults = [];
+        try {
+          const output = run.stdout.trim();
+          if (output.startsWith('{') || output.startsWith('[')) {
+            const parsed = JSON.parse(output);
+            testResults = parsed.details || parsed || [];
+          }
+        } catch (parseError) {
+          this.logger.warn('Could not parse test results from API stdout:', parseError);
+        }
+
+        const success = run.code === 0 && !run.stderr;
+        const result = {
+          success,
+          output: run.stdout,
+          error: run.stderr,
+          executionTime: run.wall_time || 0,
+          memoryUsed: run.memory || 0,
+          cpuTime: run.cpu_time || 0,
+          exitCode: run.code,
+          signal: run.signal,
+          status: run.status || (run.code === 0 ? 'success' : 'error'),
+          testResults,
+          language: pistonLanguage,
+          version,
+          originalLanguage: language,
+          problemId,
+          userId,
+          executionMethod: 'api',
+        };
+
+        return result;
+      } catch (apiError) {
+        this.logger.warn(`API failed for job ${job.id}, falling back to CLI:`, apiError.message);
+      }
+
+      // Fallback to CLI
       const pistonCliPath =
         process.env.PISTON_CLI_PATH || '/path/to/piston/cli/index.js';
 
-      const cliCommand = `${pistonCliPath} run javascript "${pathToFile}" -l 20.11.1`;
+      const cliCommand = `${pistonCliPath} run ${pistonLanguage} "${pathToFile}" -l ${version}`;
 
       this.logger.log(`Executing CLI command: ${cliCommand}`);
 
       const startTime = Date.now();
 
-
       const { stdout, stderr } = await execAsync(cliCommand, {
-        timeout: 30000, 
+        timeout: 30000,
         maxBuffer: 1024 * 1024 * 10,
       });
 
@@ -96,8 +178,8 @@ export class CodeExecutionConsumer extends WorkerHost {
         signal: null,
         status: hasErrors ? 'error' : 'success',
         testResults: testResults,
-        language: language,
-        version: '20.11.1',
+        language: pistonLanguage,
+        version,
         originalLanguage: language,
         problemId,
         userId,
@@ -129,9 +211,9 @@ export class CodeExecutionConsumer extends WorkerHost {
     this.logger.log(`Job ${job.id} completed with result:`, {
       success: result.success,
       exitCode: result.exitCode,
-      testsPassed: result.testResults?.passed || 0,
-      testsTotal: result.testResults?.total || 0,
-      score: result.testResults?.score || 0,
+      testsPassed: result.testResults?.filter((t: any) => t.passed).length || 0,
+      testsTotal: result.testResults?.length || 0,
+      score: result.testResults?.reduce((acc: number, t: any) => acc + (t.score || 0), 0) || 0,
       language: result.originalLanguage,
       pistonLanguage: result.language,
       version: result.version,

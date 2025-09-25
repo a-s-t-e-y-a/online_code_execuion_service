@@ -1,0 +1,57 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include "json.hpp"
+
+using json = nlohmann::json;
+
+{{{user_code}}}
+
+// Public test cases JSON string
+const std::string publicTestCasesJson = R"({{{json public_test_cases}}})";
+
+// Private test cases JSON string
+const std::string privateTestCasesJson = R"({{{json private_test_cases}}})";
+
+// Test execution function
+void executeTests() {
+    // Public test cases
+    json publicTestCases = json::parse(publicTestCasesJson);
+    int publicPassed = 0;
+    int publicTotal = publicTestCases.size();
+    std::cout << "Public Test Cases:" << std::endl;
+    for (size_t i = 0; i < publicTestCases.size(); ++i) {
+        auto &testCase = publicTestCases[i];
+        Solution sol;
+        auto res = sol.{{{function_name}}}(testCase["input"]["{{{parameters.0.name}}}"]);
+        auto expected = testCase["output"];
+        if (res == expected) {
+            std::cout << "Test Case " << (i + 1) << ": Passed" << std::endl;
+            publicPassed++;
+        } else {
+            std::cout << "Test Case " << (i + 1) << ": Failed - Expected " << expected << ", Got " << res << std::endl;
+        }
+    }
+    std::cout << "\nPublic Summary: " << publicPassed << "/" << publicTotal << " tests passed." << std::endl;
+
+    // Private test cases
+    json privateTestCases = json::parse(privateTestCasesJson);
+    int privatePassed = 0;
+    int privateTotal = privateTestCases.size();
+    for (size_t i = 0; i < privateTestCases.size(); ++i) {
+        auto &testCase = privateTestCases[i];
+        Solution sol;
+        auto res = sol.{{{function_name}}}(testCase["input"]["{{{parameters.0.name}}}"]);
+        auto expected = testCase["output"];
+        if (res == expected) {
+            privatePassed++;
+        }
+    }
+    std::cout << "Private tests: " << privatePassed << " passed, " << (privateTotal - privatePassed) << " failed." << std::endl;
+}
+
+int main() {
+    executeTests();
+    return 0;
+}

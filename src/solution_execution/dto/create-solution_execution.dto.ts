@@ -4,8 +4,8 @@ import { IsString, IsArray, IsOptional, IsEnum, IsNumber } from 'class-validator
 export enum SupportedLanguage {
   JAVASCRIPT = 'javascript',
   PYTHON = 'python',
-  JAVA = 'java',
-  CPP = 'cpp',
+  JAVA = 'Java',
+  CPP = 'C++',
   CSHARP = 'csharp',
 }
 export enum SupportedExtension {
