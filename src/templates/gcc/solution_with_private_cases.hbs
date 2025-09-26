@@ -29,24 +29,12 @@ void executeTests() {
     int failed = 0;
     int errors = 0;
 
-    printf("{\"total\": %d, \"passed\": %d, \"failed\": %d, \"errors\": %d, \"details\": [", total, passed, failed, errors);
-
-    int testIndex = 0;
-
-    // Execute public test cases first
+    // Execute public test cases
     if (publicRoot) {
         for (int i = 0; i < publicTotal; i++) {
             cJSON* testCase = cJSON_GetArrayItem(publicRoot, i);
-            cJSON* input = cJSON_GetObjectItem(testCase, "input");
-            cJSON* output = cJSON_GetObjectItem(testCase, "output");
-
-            // Assume simple types for now; extend as needed
-            // For example, if input is array of ints, etc.
-            // This is a placeholder - actual implementation depends on types
-
-            printf("{\"index\": %d, \"type\": \"public\", \"status\": \"not_implemented\"}", testIndex + 1);
-            testIndex++;
-            if (testIndex < total) printf(",");
+            // Placeholder: assume failed for now
+            failed++;
         }
     }
 
@@ -54,20 +42,12 @@ void executeTests() {
     if (privateRoot) {
         for (int i = 0; i < privateTotal; i++) {
             cJSON* testCase = cJSON_GetArrayItem(privateRoot, i);
-            cJSON* input = cJSON_GetObjectItem(testCase, "input");
-            cJSON* output = cJSON_GetObjectItem(testCase, "output");
-
-            // Assume simple types for now; extend as needed
-            // For example, if input is array of ints, etc.
-            // This is a placeholder - actual implementation depends on types
-
-            printf("{\"index\": %d, \"type\": \"private\", \"status\": \"not_implemented\"}", testIndex + 1);
-            testIndex++;
-            if (testIndex < total) printf(",");
+            // Placeholder: assume failed for now
+            failed++;
         }
     }
 
-    printf("]}\n");
+    printf("{\"total\": %d, \"passed\": %d, \"failed\": %d, \"errors\": %d}\n", total, passed, failed, errors);
 
     if (publicRoot) cJSON_Delete(publicRoot);
     if (privateRoot) cJSON_Delete(privateRoot);

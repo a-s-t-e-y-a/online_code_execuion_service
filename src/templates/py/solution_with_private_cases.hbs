@@ -18,19 +18,8 @@ def execute_tests():
         passed = 0
         failed = 0
         errors = 0
-        details = []
 
-        for i, test_case in enumerate(all_test_cases, 1):
-            # Determine if this is a public or private test case
-            is_public = i <= len(public_test_cases)
-            test_type = "public" if is_public else "private"
-
-            detail = {
-                "index": i,
-                "type": test_type,
-                "status": "failed"
-            }
-
+        for test_case in all_test_cases:
             try:
                 # Extract inputs
                 inputs = list(test_case["input"].values())
@@ -38,23 +27,19 @@ def execute_tests():
                 # result = {{function_name}}(*inputs)
                 # Compare with test_case["output"]
 
-                detail["status"] = "not_implemented"
-                details.append(detail)
+                # For now, mark as failed since implementation is placeholder
+                failed += 1
             except Exception as e:
-                detail["status"] = "error"
-                detail["error"] = str(e)
                 errors += 1
-                details.append(detail)
 
         results = {
             "total": total,
             "passed": passed,
             "failed": failed,
-            "errors": errors,
-            "details": details
+            "errors": errors
         }
 
-        print(json.dumps(results, indent=2))
+        print(json.dumps(results))
     except Exception as e:
         print(json.dumps({"error": str(e)}))
 
