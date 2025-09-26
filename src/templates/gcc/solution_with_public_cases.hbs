@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "cJSON.h"
 
 {{{user_code}}}
@@ -21,23 +22,67 @@ void executeTests() {
     int failed = 0;
     int errors = 0;
 
-    printf("{\"total\": %d, \"passed\": %d, \"failed\": %d, \"errors\": %d, \"details\": [", total, passed, failed, errors);
-
+    // Execute test cases
     for (int i = 0; i < total; i++) {
         cJSON* testCase = cJSON_GetArrayItem(root, i);
-        cJSON* input = cJSON_GetObjectItem(testCase, "input");
-        cJSON* output = cJSON_GetObjectItem(testCase, "output");
-
-        // Assume simple types for now; extend as needed
-        // For example, if input is array of ints, etc.
-        // This is a placeholder - actual implementation depends on types
-
-        printf("{\"index\": %d, \"status\": \"not_implemented\"}", i + 1);
-        if (i < total - 1) printf(",");
+        if (!testCase) {
+            errors++;
+            continue;
+        }
+        
+        cJSON* inputObj = cJSON_GetObjectItem(testCase, "input");
+        cJSON* expectedObj = cJSON_GetObjectItem(testCase, "output");
+        
+        if (!inputObj || !expectedObj) {
+            errors++;
+            continue;
+        }
+        
+        // Simple approach: extract first parameter (most common case)
+        // This can be extended for multiple parameters if needed
+        cJSON* firstParam = NULL;
+        cJSON* param = NULL;
+        cJSON_ArrayForEach(param, inputObj) {
+            firstParam = param;
+            break; // Get first parameter
+        }
+        
+        if (!firstParam) {
+            errors++;
+            continue;
+        }
+        
+        // Call user function based on parameter type
+        if (cJSON_IsString(firstParam)) {
+            // String parameter
+            char* inputVal = firstParam->valuestring;
+            int result = {{function_name}}(inputVal);
+            int expected = expectedObj->valueint;
+            
+            if (result == expected) {
+                passed++;
+            } else {
+                failed++;
+            }
+        } else if (cJSON_IsNumber(firstParam)) {
+            // Integer parameter
+            int inputVal = firstParam->valueint;
+            int result = {{function_name}}(inputVal);
+            int expected = expectedObj->valueint;
+            
+            if (result == expected) {
+                passed++;
+            } else {
+                failed++;
+            }
+        } else {
+            errors++;
+        }
     }
 
-    printf("]}\n");
+    printf("{\"total\": %d, \"passed\": %d, \"failed\": %d, \"errors\": %d}\n", total, passed, failed, errors);
     cJSON_Delete(root);
+}
 }
 
 int main() {

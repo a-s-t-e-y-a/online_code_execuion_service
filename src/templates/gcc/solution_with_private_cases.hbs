@@ -47,38 +47,44 @@ void executeTests() {
                 continue;
             }
             
-            // Extract input parameters
-            {{#each parameters}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) {
+            // Simple approach: extract first parameter (most common case)
+            cJSON* firstParam = NULL;
+            cJSON* param = NULL;
+            cJSON_ArrayForEach(param, inputObj) {
+                firstParam = param;
+                break; // Get first parameter
+            }
+            
+            if (!firstParam) {
                 errors++;
                 continue;
             }
-            {{/each}}
             
-            // Call user function
-            {{#if (eq return_type "int")}}
-            int result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
-            int expected = expectedObj->valueint;
-            {{else if (eq return_type "double")}}
-            double result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
-            double expected = expectedObj->valuedouble;
-            {{else if (eq return_type "string")}}
-            char* result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
-            char* expected = expectedObj->valuestring;
-            {{/if}}
-            
-            // Compare result with expected
-            {{#if (eq return_type "int")}}
-            if (result == expected) {
-            {{else if (eq return_type "double")}}
-            if (fabs(result - expected) < 1e-9) {
-            {{else if (eq return_type "string")}}
-            if (strcmp(result, expected) == 0) {
-            {{/if}}
-                passed++;
+            // Call user function based on parameter type
+            if (cJSON_IsString(firstParam)) {
+                // String parameter
+                char* inputVal = firstParam->valuestring;
+                int result = {{function_name}}(inputVal);
+                int expected = expectedObj->valueint;
+                
+                if (result == expected) {
+                    passed++;
+                } else {
+                    failed++;
+                }
+            } else if (cJSON_IsNumber(firstParam)) {
+                // Integer parameter
+                int inputVal = firstParam->valueint;
+                int result = {{function_name}}(inputVal);
+                int expected = expectedObj->valueint;
+                
+                if (result == expected) {
+                    passed++;
+                } else {
+                    failed++;
+                }
             } else {
-                failed++;
+                errors++;
             }
         }
     }
@@ -100,38 +106,44 @@ void executeTests() {
                 continue;
             }
             
-            // Extract input parameters
-            {{#each parameters}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) {
+            // Simple approach: extract first parameter (most common case)
+            cJSON* firstParam = NULL;
+            cJSON* param = NULL;
+            cJSON_ArrayForEach(param, inputObj) {
+                firstParam = param;
+                break; // Get first parameter
+            }
+            
+            if (!firstParam) {
                 errors++;
                 continue;
             }
-            {{/each}}
             
-            // Call user function
-            {{#if (eq return_type "int")}}
-            int result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
-            int expected = expectedObj->valueint;
-            {{else if (eq return_type "double")}}
-            double result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
-            double expected = expectedObj->valuedouble;
-            {{else if (eq return_type "string")}}
-            char* result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
-            char* expected = expectedObj->valuestring;
-            {{/if}}
-            
-            // Compare result with expected
-            {{#if (eq return_type "int")}}
-            if (result == expected) {
-            {{else if (eq return_type "double")}}
-            if (fabs(result - expected) < 1e-9) {
-            {{else if (eq return_type "string")}}
-            if (strcmp(result, expected) == 0) {
-            {{/if}}
-                passed++;
+            // Call user function based on parameter type
+            if (cJSON_IsString(firstParam)) {
+                // String parameter
+                char* inputVal = firstParam->valuestring;
+                int result = {{function_name}}(inputVal);
+                int expected = expectedObj->valueint;
+                
+                if (result == expected) {
+                    passed++;
+                } else {
+                    failed++;
+                }
+            } else if (cJSON_IsNumber(firstParam)) {
+                // Integer parameter
+                int inputVal = firstParam->valueint;
+                int result = {{function_name}}(inputVal);
+                int expected = expectedObj->valueint;
+                
+                if (result == expected) {
+                    passed++;
+                } else {
+                    failed++;
+                }
             } else {
-                failed++;
+                errors++;
             }
         }
     }
