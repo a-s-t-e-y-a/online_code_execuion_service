@@ -65,7 +65,7 @@ export class SolutionExecutionController {
         await this.templateService.generateTemplate({
           template_name: template_name,
           function_name: problem_data.function_name,
-          language: executeCodeDto.language,
+          runtime: executeCodeDto.runtime,
           public_test_cases_url: problem_data.public_test_cases,
           private_test_cases_url: problem_data.private_test_cases,
           user_code: executeCodeDto.code,
@@ -83,10 +83,9 @@ export class SolutionExecutionController {
       const job = await this.jobSchedulingService.addCodeExecutionJob({
         data: {
           code: "now we dont provide code here",
-          extension: code_template_generation[0].extension,
+          runtime: executeCodeDto.runtime,
           fileName: fileName,
           pathToFile: fullPath,
-          language: executeCodeDto.language,
           problemId: executeCodeDto.problemId,
           userId: executeCodeDto.userId,
         },
@@ -94,7 +93,7 @@ export class SolutionExecutionController {
 
       const data = {
         jobId: job.id,
-        language: executeCodeDto.language,
+        runtime: executeCodeDto.runtime,
         problemId: executeCodeDto.problemId,
         userId: executeCodeDto.userId,
       };

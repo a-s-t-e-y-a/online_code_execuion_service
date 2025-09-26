@@ -12,7 +12,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as handlebars from 'handlebars';
 import { flag_names } from 'src/config/flag_name';
-import languages from 'src/config/languages';
+import mapLanguageToPiston from 'src/config/piston.runtime.map';
 import { performance } from 'perf_hooks';
 import * as schema from '../schema';
 
@@ -34,7 +34,7 @@ interface GenerateTemplateParams {
   public_test_cases_url?: string;
   private_test_cases_url?: string;
   problem_id: number;
-  language?: string;
+  runtime?: string;
   flag: string;
   user_code?: string;
 }
@@ -42,7 +42,7 @@ interface GenerateTemplateParams {
 interface GenerateTemplateEngineParams {
   problem_id: number;
   template_name: string;
-  language: string;
+  runtime: string;
   description?: string;
   function_name: string;
   parameters: Parameter[];
@@ -55,7 +55,7 @@ interface GenerateTemplateEngineParams {
 interface TemplateResult {
   problem_id: number;
   code_snippet: string;
-  language: string;
+  runtime: string;
   extension: string;
 }
 
@@ -128,7 +128,7 @@ export class TemplateServerCumMiddlewareService {
       public_test_cases_url,
       private_test_cases_url,
       problem_id,
-      language,
+      runtime,
       flag,
       user_code,
     } = params;
@@ -139,15 +139,15 @@ export class TemplateServerCumMiddlewareService {
         .from(language_specific_parameters)
         .where(eq(language_specific_parameters.problem_id, problem_id));
 
-      const promises = languages.map(async (lang) => {
-        const langParam = langParams.find(lp => lp.language === lang.name);
+      const promises = mapLanguageToPiston.map(async (m) => {
+        const langParam = langParams.find(lp => lp.runtime === m.runtime);
         if (!langParam) {
-          throw new NotFoundException(`No parameters found for language ${lang.name} in problem ${problem_id}`);
+          throw new NotFoundException(`No parameters found for runtime ${m.runtime} in problem ${problem_id}`);
         }
         const result = await this.generateTemplateEngine({
           problem_id,
           template_name,
-          language: lang.name.toLowerCase(),
+          runtime: m.runtime,
           description,
           function_name,
           parameters: langParam.parameters || [],
@@ -157,18 +157,23 @@ export class TemplateServerCumMiddlewareService {
         return {
           problem_id,
           code_snippet: result.content,
-          language: lang.name.toLowerCase(),
-          extension: lang.extension,
+          runtime: m.runtime,
+          extension: m.extension,
         };
       });
       const results = await Promise.all(promises);
 
       return results;
     } else {
-      if (!language) {
+      if (!runtime) {
         throw new BadRequestException(
-          'Language must be specified for non-boilerplate code generation',
+          'Runtime must be specified for non-boilerplate code generation',
         );
+      }
+
+      const mapping = mapLanguageToPiston.find(m => m.runtime === runtime);
+      if (!mapping) {
+        throw new BadRequestException(`Unsupported runtime: ${runtime}`);
       }
 
       let effectivePublicTestCases: TestCase[] = [];
@@ -208,19 +213,19 @@ export class TemplateServerCumMiddlewareService {
         .where(
           and(
             eq(language_specific_parameters.problem_id, problem_id),
-            eq(language_specific_parameters.language, language)
+            eq(language_specific_parameters.runtime, mapping.runtime)
           )
         )
         .limit(1);
       
       if (langParam.length === 0) {
-        throw new NotFoundException(`No parameters found for language ${language} in problem ${problem_id}`);
+        throw new NotFoundException(`No parameters found for language ${mapping.name} in problem ${problem_id}`);
       }
 
       const result = await this.generateTemplateEngine({
         problem_id,
         template_name,
-        language,
+        runtime,
         function_name,
         parameters: langParam[0].parameters || [],
         return_type: langParam[0].return_type,
@@ -229,15 +234,12 @@ export class TemplateServerCumMiddlewareService {
         user_code,
       });
 
-      const languageConfig = languages.find(
-        (lang) => lang.name.toLowerCase() === language.toLowerCase(),
-      );
       const finalResult = [
         {
           problem_id,
           code_snippet: result.content,
-          language,
-          extension: languageConfig?.extension || 'js',
+          runtime: runtime,
+          extension: mapping.extension,
         },
       ];
 
@@ -251,7 +253,7 @@ export class TemplateServerCumMiddlewareService {
     const {
       problem_id,
       template_name,
-      language,
+      runtime,
       function_name,
       parameters,
       return_type,
@@ -259,6 +261,14 @@ export class TemplateServerCumMiddlewareService {
       private_test_cases,
       user_code,
     } = params;
+
+    const mapping = mapLanguageToPiston.find(m => m.runtime === runtime);
+    if (!mapping) {
+      throw new BadRequestException(`Unsupported runtime: ${runtime}`);
+    }
+
+    const language = mapping.runtime;
+
     const cacheKey = `${language}_${template_name}`;
     let template: HandlebarsTemplateDelegate;
 
@@ -283,7 +293,7 @@ export class TemplateServerCumMiddlewareService {
     let className = 'Solution'; // default fallback
     let modifiedUserCode = decodedUserCode;
     
-    if (language.toLowerCase() === 'java') {
+    if (language === 'java') {
       if (decodedUserCode) {
         const classMatch = decodedUserCode.match(/public\s+class\s+(\w+)/);
         if (classMatch) {
@@ -310,12 +320,9 @@ export class TemplateServerCumMiddlewareService {
     };
     const generatedCode = template(templateData);
     console.log(btoa(generatedCode));
-    const languageConfig = languages.find(
-      (lang) => lang.name.toLowerCase() === language.toLowerCase(),
-    );
-    const extension = languageConfig?.extension || 'js';
+    const extension = mapping.extension;
     // Use extracted class name for filename to match the actual class name
-    const filename = language.toLowerCase() === 'java' ? `${className}.${extension}` : `${problem_id}_${function_name}_solution.${extension}`;
+    const filename = runtime === 'java' ? `${className}.${extension}` : `${problem_id}_${function_name}_solution.${extension}`;
     return {
       filename,
       content: generatedCode,

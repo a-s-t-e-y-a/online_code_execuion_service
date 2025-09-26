@@ -28,24 +28,21 @@ export class SolutionExecutionService {
   }
   async executeCode({
     code,
-    language,
+    runtime,
     testCases,
     problemId,
-    extension,
   }: {
     code: string;
-    language: string;
+    runtime: string;
     testCases?: any[];
     problemId?: number;
-    extension: string;
   }) {
     const job = await this.jobSchedulingService.addCodeExecutionJob({
       data: {
         code,
-        language,
+        runtime,
         testCases,
         problemId,
-        extension,
       },
     });
     return job;

@@ -4,10 +4,9 @@ import { Queue, Job } from 'bullmq';
 
 interface CodeExecutionJobData {
   code: string; // base64 encoded code
-  extension: string;
+  runtime: string;
   fileName?: string;
   pathToFile?: string;
-  language: string;
   testCases?: any[];
   problemId?: number;
   userId?: string;

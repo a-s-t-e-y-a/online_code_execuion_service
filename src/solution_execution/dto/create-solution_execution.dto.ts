@@ -1,19 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsString, IsArray, IsOptional, IsEnum, IsNumber } from 'class-validator';
 
-export enum SupportedLanguage {
-  JAVASCRIPT = 'javascript',
-  PYTHON = 'python',
-  JAVA = 'Java',
-  CPP = 'C++',
-  CSHARP = 'csharp',
-}
-export enum SupportedExtension {
+export enum SupportedRuntime {
   JS = 'js',
   PY = 'py',
   JAVA = 'java',
   CPP = 'cpp',
-  CS = 'cs',
+  C = 'c',
 }
 
 export enum ExecutionType {
@@ -44,18 +37,11 @@ export class ExecuteCodeDto {
   code: string;
 
   @ApiProperty({
-    enum: SupportedLanguage,
-    description: 'Programming language of the code',
+    enum: SupportedRuntime,
+    description: 'Runtime of the code',
   })
-  @IsEnum(SupportedLanguage)
-  language: SupportedLanguage;
-
-  @ApiProperty({
-    enum: SupportedExtension,
-    description: 'File extension of the code',
-  })
-  @IsEnum(SupportedExtension)
-  extension: SupportedExtension;
+  @IsEnum(SupportedRuntime)
+  runtime: SupportedRuntime;
 
   @ApiProperty({ description: 'ID of the user' })
   @IsString()

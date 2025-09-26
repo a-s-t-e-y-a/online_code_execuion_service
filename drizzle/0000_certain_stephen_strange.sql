@@ -3,8 +3,7 @@ CREATE TABLE "boiler_plate_snippet" (
 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "boiler_plate_snippet_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"problem_id" integer NOT NULL,
 	"code_snippet" text NOT NULL,
-	"language" text NOT NULL,
-	"extension" text NOT NULL,
+	"runtime" text NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now(),
 	"deleted_at" timestamp
@@ -13,7 +12,7 @@ CREATE TABLE "boiler_plate_snippet" (
 CREATE TABLE "language_specific_parameters" (
 	"id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY (sequence name "language_specific_parameters_id_seq" INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 START WITH 1 CACHE 1),
 	"problem_id" integer NOT NULL,
-	"language" text NOT NULL,
+	"runtime" text NOT NULL,
 	"return_type" text NOT NULL,
 	"parameters" jsonb DEFAULT '[]'::jsonb,
 	"created_at" timestamp DEFAULT now() NOT NULL,

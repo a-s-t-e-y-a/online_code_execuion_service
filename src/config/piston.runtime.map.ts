@@ -1,43 +1,38 @@
 const mapLanguageToPiston = [
     {
-        runtime: 'c',
+        runtime: 'gcc',
+        name: 'C',
         piston: 'c',
-        runtime_version:'10.2.0'
+        runtime_version:'10.2.0',
+        extension: 'c'
     },
     {
-        runtime: 'c++',
-        piston: 'cpp',
-        runtime_version:'10.2.0'
-    },
-    {
-        runtime: 'go',
-        piston: 'go',
-        runtime_version:'1.16.2'
+        runtime: 'cpp',
+        name: 'C++',
+        piston: 'c++',
+        runtime_version:'10.2.0',
+        extension: 'cpp'
     },
     {
         runtime: 'java',
+        name: 'Java',
         piston: 'java',
-        runtime_version:'15.0.2'
+        runtime_version:'15.0.2',
+        extension: 'java'
     },
     {
         runtime: 'js',
+        name: 'JavaScript',
         piston: 'javascript',
-        runtime_version:'20.11.1'
-    },
-    {
-        runtime: 'javascript',
-        piston: 'javascript', 
-        runtime_version:'20.11.1'
+        runtime_version:'20.11.1',
+        extension: 'js'
     },
     {
         runtime: 'py',
+        name: 'Python',
         piston: 'python',
-        runtime_version:'3.12.0'
-    },
-    {
-        runtime: 'python',
-        piston: 'python',
-        runtime_version:'3.12.0'
+        runtime_version:'3.12.0',
+        extension: 'py'
     }
 ]
 export default mapLanguageToPiston;

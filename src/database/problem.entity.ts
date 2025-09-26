@@ -24,7 +24,7 @@ export const problem_entity = pgTable('problem_entity', {
 export const language_specific_parameters = pgTable('language_specific_parameters', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   problem_id: integer('problem_id').notNull().references(() => problem_entity.id),
-  language: text('language').notNull(),
+  runtime: text('runtime').notNull(),
   return_type: text('return_type').notNull(),
   parameters: jsonb('parameters').$type<Parameter[]>().default([]),
   ...common_entity
@@ -34,8 +34,7 @@ export const boiler_plate_snippet = pgTable('boiler_plate_snippet', {
   id: integer('id').primaryKey().generatedAlwaysAsIdentity(),
   problem_id: integer('problem_id').notNull().references(() => problem_entity.id), 
   code_snippet: text('code_snippet').notNull(),
-  language: text('language').notNull(),
-  extension: text('extension').notNull(),
+  runtime: text('runtime').notNull(),
   ...common_entity
 });
 

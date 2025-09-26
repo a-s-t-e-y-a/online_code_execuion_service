@@ -21,7 +21,7 @@ import { DrizzleAsyncProvider } from '../drizzle/drizzle.provider';
 import { eq, and } from 'drizzle-orm';
 import { TemplateServerCumMiddlewareService } from 'src/template_engine/template_engine.service';
 import { Cache, CACHE_MANAGER } from '@nestjs/cache-manager';
-import languages from 'src/config/languages';
+import mapLanguageToPiston from 'src/config/piston.runtime.map';
 import { flag_names } from 'src/config/flag_name';
 import { cppTypeMappings } from '../config/cpp_type_mappings';
 
@@ -139,21 +139,21 @@ export class ProblemService {
     }
   }
 
-  async getBoilerplateCode(problemId: number, language: string) {
+  async getBoilerplateCode(problemId: number, runtime: string) {
     const snippet = await this.db
       .select()
       .from(boiler_plate_snippet)
       .where(
         and(
           eq(boiler_plate_snippet.problem_id, problemId),
-          eq(boiler_plate_snippet.language, language),
+          eq(boiler_plate_snippet.runtime, runtime),
         ),
       )
       .limit(1);
 
     if (snippet.length === 0) {
       throw new BadRequestException(
-        `No boilerplate code found for problem ${problemId} in language ${language}`,
+        `No boilerplate code found for problem ${problemId} in runtime ${runtime}`,
       );
     }
 
@@ -203,7 +203,7 @@ export class ProblemService {
     return_type: string;
   }) {
     const { parameters, return_type, problem_id } = params;
-    const result = languages.map((lang) => {
+    const result = mapLanguageToPiston.map((m) => {
       const mappedParams = parameters.map((param) => {
         const cppType = param.type;
         const mapping = cppTypeMappings[cppType];
@@ -212,13 +212,7 @@ export class ProblemService {
             `No mapping found for C++ type: ${cppType}`,
           );
         }
-        let langType: string;
-        if (lang.name === 'C++') {
-          langType = cppType;
-        } else {
-          const langKey = lang.name === 'C' ? 'c' : lang.name.toLowerCase();
-          langType = mapping[langKey] || cppType;
-        }
+        const langType = mapping[m.runtime] || cppType;
         return {
           name: param.name,
           type: langType,
@@ -226,21 +220,15 @@ export class ProblemService {
       });
 
       const returnMapping = cppTypeMappings[return_type];
-      let mappedReturnType: string;
       if (!returnMapping) {
         throw new NotFoundException(
           `No mapping found for C++ return type: ${return_type}`,
         );
       }
-      if (lang.name === 'C++') {
-        mappedReturnType = return_type;
-      } else {
-        const langKey = lang.name === 'C' ? 'c' : lang.name.toLowerCase();
-        mappedReturnType = returnMapping[langKey] || return_type;
-      }
+      const mappedReturnType = returnMapping[m.runtime] || return_type;
 
       return {
-        language: lang.name,
+        runtime: m.runtime,
         parameters: mappedParams,
         problem_id: problem_id,
         return_type: mappedReturnType,

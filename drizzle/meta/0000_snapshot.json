@@ -1,5 +1,5 @@
 {
-  "id": "dda42477-1077-48d3-8214-6d540bb335f1",
+  "id": "838fd453-25ca-44bc-ac6d-917cc236d34d",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -37,14 +37,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "language": {
-          "name": "language",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "extension": {
-          "name": "extension",
+        "runtime": {
+          "name": "runtime",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -119,8 +113,8 @@
           "primaryKey": false,
           "notNull": true
         },
-        "language": {
-          "name": "language",
+        "runtime": {
+          "name": "runtime",
           "type": "text",
           "primaryKey": false,
           "notNull": true
