@@ -6,7 +6,7 @@ export enum SupportedRuntime {
   PY = 'py',
   JAVA = 'java',
   CPP = 'cpp',
-  C = 'c',
+  C = 'gcc',
 }
 
 export enum ExecutionType {
