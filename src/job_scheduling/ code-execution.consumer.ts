@@ -35,7 +35,7 @@ export class CodeExecutionConsumer extends WorkerHost {
       if (!mapping) {
         throw new Error(`Unsupported runtime: ${runtime}`);
       }
-      const pistonLanguage = mapping.piston;
+      const pistonLanguage = mapping.runtime;
       const version = mapping.runtime_version;
       const pistonCliPath =
         process.env.DEV === 'true'

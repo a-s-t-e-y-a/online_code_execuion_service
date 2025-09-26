@@ -14,5 +14,4 @@ export class LanguageService {
     const response = await axios.get(url + '/runtimes');
     return response.data;
   }
-  
 }
