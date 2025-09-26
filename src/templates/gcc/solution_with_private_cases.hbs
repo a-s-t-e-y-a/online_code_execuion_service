@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "cJSON.h"
 
 {{{user_code}}}
@@ -33,8 +34,52 @@ void executeTests() {
     if (publicRoot) {
         for (int i = 0; i < publicTotal; i++) {
             cJSON* testCase = cJSON_GetArrayItem(publicRoot, i);
-            // Placeholder: assume failed for now
-            failed++;
+            if (!testCase) {
+                errors++;
+                continue;
+            }
+            
+            cJSON* inputObj = cJSON_GetObjectItem(testCase, "input");
+            cJSON* expectedObj = cJSON_GetObjectItem(testCase, "output");
+            
+            if (!inputObj || !expectedObj) {
+                errors++;
+                continue;
+            }
+            
+            // Extract input parameters
+            {{#each parameters}}
+            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+            if (!param_{{@index}}) {
+                errors++;
+                continue;
+            }
+            {{/each}}
+            
+            // Call user function
+            {{#if (eq return_type "int")}}
+            int result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
+            int expected = expectedObj->valueint;
+            {{else if (eq return_type "double")}}
+            double result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
+            double expected = expectedObj->valuedouble;
+            {{else if (eq return_type "string")}}
+            char* result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
+            char* expected = expectedObj->valuestring;
+            {{/if}}
+            
+            // Compare result with expected
+            {{#if (eq return_type "int")}}
+            if (result == expected) {
+            {{else if (eq return_type "double")}}
+            if (fabs(result - expected) < 1e-9) {
+            {{else if (eq return_type "string")}}
+            if (strcmp(result, expected) == 0) {
+            {{/if}}
+                passed++;
+            } else {
+                failed++;
+            }
         }
     }
 
@@ -42,8 +87,52 @@ void executeTests() {
     if (privateRoot) {
         for (int i = 0; i < privateTotal; i++) {
             cJSON* testCase = cJSON_GetArrayItem(privateRoot, i);
-            // Placeholder: assume failed for now
-            failed++;
+            if (!testCase) {
+                errors++;
+                continue;
+            }
+            
+            cJSON* inputObj = cJSON_GetObjectItem(testCase, "input");
+            cJSON* expectedObj = cJSON_GetObjectItem(testCase, "output");
+            
+            if (!inputObj || !expectedObj) {
+                errors++;
+                continue;
+            }
+            
+            // Extract input parameters
+            {{#each parameters}}
+            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+            if (!param_{{@index}}) {
+                errors++;
+                continue;
+            }
+            {{/each}}
+            
+            // Call user function
+            {{#if (eq return_type "int")}}
+            int result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
+            int expected = expectedObj->valueint;
+            {{else if (eq return_type "double")}}
+            double result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
+            double expected = expectedObj->valuedouble;
+            {{else if (eq return_type "string")}}
+            char* result = {{function_name}}({{#each parameters}}{{#if @index}}, {{/if}}{{#if (eq type "int")}}param_{{@index}}->valueint{{else if (eq type "string")}}param_{{@index}}->valuestring{{else if (eq type "double")}}param_{{@index}}->valuedouble{{/if}}{{/each}});
+            char* expected = expectedObj->valuestring;
+            {{/if}}
+            
+            // Compare result with expected
+            {{#if (eq return_type "int")}}
+            if (result == expected) {
+            {{else if (eq return_type "double")}}
+            if (fabs(result - expected) < 1e-9) {
+            {{else if (eq return_type "string")}}
+            if (strcmp(result, expected) == 0) {
+            {{/if}}
+                passed++;
+            } else {
+                failed++;
+            }
         }
     }
 

@@ -2,46 +2,43 @@ import json
 
 {{{user_code}}}
 
-# Public test cases JSON string
-public_test_cases_json = """{{{json public_test_cases}}}"""
+# Public test cases
+public_test_cases = {{{json public_test_cases}}}
 
-# Private test cases JSON string
-private_test_cases_json = """{{{json private_test_cases}}}"""
+# Private test cases  
+private_test_cases = {{{json private_test_cases}}}
+
+# Combine all test cases
+all_test_cases = public_test_cases + private_test_cases
 
 def execute_tests():
-    try:
-        public_test_cases = json.loads(public_test_cases_json) if public_test_cases_json.strip() else []
-        private_test_cases = json.loads(private_test_cases_json) if private_test_cases_json.strip() else []
-
-        all_test_cases = public_test_cases + private_test_cases
-        total = len(all_test_cases)
-        passed = 0
-        failed = 0
-        errors = 0
-
-        for test_case in all_test_cases:
-            try:
-                # Extract inputs
-                inputs = list(test_case["input"].values())
-                # Call function - placeholder
-                # result = {{function_name}}(*inputs)
-                # Compare with test_case["output"]
-
-                # For now, mark as failed since implementation is placeholder
-                failed += 1
-            except Exception as e:
-                errors += 1
-
-        results = {
-            "total": total,
-            "passed": passed,
-            "failed": failed,
-            "errors": errors
-        }
-
-        print(json.dumps(results))
-    except Exception as e:
-        print(json.dumps({"error": str(e)}))
+    results = {
+        "total": len(all_test_cases),
+        "passed": 0,
+        "failed": 0,
+        "errors": 0
+    }
+    
+    for test_case in all_test_cases:
+        try:
+            # Extract input values in order
+            input_values = list(test_case["input"].values())
+            expected = test_case["output"]
+            
+            # Call user's function
+            result = {{function_name}}(*input_values)
+            
+            # Use Python's built-in assertion
+            assert result == expected, f"Expected {expected}, got {result}"
+            results["passed"] += 1
+            
+        except AssertionError:
+            results["failed"] += 1
+        except Exception:
+            results["errors"] += 1
+    
+    return results
 
 if __name__ == "__main__":
-    execute_tests()
+    test_results = execute_tests()
+    print(json.dumps(test_results))
