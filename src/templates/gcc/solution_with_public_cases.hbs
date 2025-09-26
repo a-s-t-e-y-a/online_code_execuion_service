@@ -38,51 +38,60 @@ void executeTests() {
             continue;
         }
         
-        // Simple approach: extract first parameter (most common case)
-        // This can be extended for multiple parameters if needed
-        cJSON* firstParam = NULL;
-        cJSON* param = NULL;
-        cJSON_ArrayForEach(param, inputObj) {
-            firstParam = param;
-            break; // Get first parameter
+        // Extract first input parameter (most common case)
+        cJSON* firstInput = NULL;
+        cJSON* inputParam = NULL;
+        cJSON_ArrayForEach(inputParam, inputObj) {
+            firstInput = inputParam;
+            break;
         }
         
-        if (!firstParam) {
+        if (!firstInput) {
             errors++;
             continue;
         }
         
-        // Call user function based on parameter type
-        if (cJSON_IsString(firstParam)) {
-            // String parameter
-            char* inputVal = firstParam->valuestring;
-            int result = {{function_name}}(inputVal);
-            int expected = expectedObj->valueint;
-            
-            if (result == expected) {
-                passed++;
-            } else {
-                failed++;
+        // Call function based on input type
+        int testPassed = 0;
+        if (cJSON_IsString(firstInput)) {
+            // String input
+            char* inputVal = firstInput->valuestring;
+            if (cJSON_IsString(expectedObj)) {
+                char* result = {{function_name}}(inputVal);
+                if (result && strcmp(result, expectedObj->valuestring) == 0) {
+                    testPassed = 1;
+                }
+            } else if (cJSON_IsNumber(expectedObj)) {
+                int result = {{function_name}}(inputVal);
+                if (result == expectedObj->valueint) {
+                    testPassed = 1;
+                }
             }
-        } else if (cJSON_IsNumber(firstParam)) {
-            // Integer parameter
-            int inputVal = firstParam->valueint;
-            int result = {{function_name}}(inputVal);
-            int expected = expectedObj->valueint;
-            
-            if (result == expected) {
-                passed++;
-            } else {
-                failed++;
+        } else if (cJSON_IsNumber(firstInput)) {
+            // Numeric input
+            int inputVal = firstInput->valueint;
+            if (cJSON_IsNumber(expectedObj)) {
+                int result = {{function_name}}(inputVal);
+                if (result == expectedObj->valueint) {
+                    testPassed = 1;
+                }
+            } else if (cJSON_IsString(expectedObj)) {
+                char* result = {{function_name}}(inputVal);
+                if (result && strcmp(result, expectedObj->valuestring) == 0) {
+                    testPassed = 1;
+                }
             }
+        }
+        
+        if (testPassed) {
+            passed++;
         } else {
-            errors++;
+            failed++;
         }
     }
 
     printf("{\"total\": %d, \"passed\": %d, \"failed\": %d, \"errors\": %d}\n", total, passed, failed, errors);
     cJSON_Delete(root);
-}
 }
 
 int main() {
