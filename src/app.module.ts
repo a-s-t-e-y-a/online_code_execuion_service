@@ -15,6 +15,7 @@ import { SolutionExecutionModule } from './solution_execution/solution_execution
 import { CommonUseServiceService } from './common.use.service/common.use.service.service';
 import { FileManagerModule } from './file_manager/file_manager.module';
 import { join } from 'path';
+import { LanguageModule } from './language/language.module';
 import fs from 'fs';
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import fs from 'fs';
     JobSchedulingModule,
     SolutionExecutionModule,
     FileManagerModule,
+    LanguageModule,
   ],
   controllers: [AppController],
   providers: [AppService, CommonUseServiceService],
