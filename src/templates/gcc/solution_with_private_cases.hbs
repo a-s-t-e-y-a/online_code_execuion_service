@@ -1,0 +1,79 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "cJSON.h"
+
+{{{user_code}}}
+
+// Public test cases JSON string
+const char* publicTestCasesJson = "{{{jsonEscaped public_test_cases}}}";
+
+// Private test cases JSON string
+const char* privateTestCasesJson = "{{{jsonEscaped private_test_cases}}}";
+
+// Test execution function
+void executeTests() {
+    // Parse public test cases
+    cJSON* publicRoot = cJSON_Parse(publicTestCasesJson);
+    cJSON* privateRoot = cJSON_Parse(privateTestCasesJson);
+
+    if (!publicRoot && !privateRoot) {
+        printf("{\"error\": \"Failed to parse test cases JSON\"}\n");
+        return;
+    }
+
+    int publicTotal = publicRoot ? cJSON_GetArraySize(publicRoot) : 0;
+    int privateTotal = privateRoot ? cJSON_GetArraySize(privateRoot) : 0;
+    int total = publicTotal + privateTotal;
+    int passed = 0;
+    int failed = 0;
+    int errors = 0;
+
+    printf("{\"total\": %d, \"passed\": %d, \"failed\": %d, \"errors\": %d, \"details\": [", total, passed, failed, errors);
+
+    int testIndex = 0;
+
+    // Execute public test cases first
+    if (publicRoot) {
+        for (int i = 0; i < publicTotal; i++) {
+            cJSON* testCase = cJSON_GetArrayItem(publicRoot, i);
+            cJSON* input = cJSON_GetObjectItem(testCase, "input");
+            cJSON* output = cJSON_GetObjectItem(testCase, "output");
+
+            // Assume simple types for now; extend as needed
+            // For example, if input is array of ints, etc.
+            // This is a placeholder - actual implementation depends on types
+
+            printf("{\"index\": %d, \"type\": \"public\", \"status\": \"not_implemented\"}", testIndex + 1);
+            testIndex++;
+            if (testIndex < total) printf(",");
+        }
+    }
+
+    // Execute private test cases
+    if (privateRoot) {
+        for (int i = 0; i < privateTotal; i++) {
+            cJSON* testCase = cJSON_GetArrayItem(privateRoot, i);
+            cJSON* input = cJSON_GetObjectItem(testCase, "input");
+            cJSON* output = cJSON_GetObjectItem(testCase, "output");
+
+            // Assume simple types for now; extend as needed
+            // For example, if input is array of ints, etc.
+            // This is a placeholder - actual implementation depends on types
+
+            printf("{\"index\": %d, \"type\": \"private\", \"status\": \"not_implemented\"}", testIndex + 1);
+            testIndex++;
+            if (testIndex < total) printf(",");
+        }
+    }
+
+    printf("]}\n");
+
+    if (publicRoot) cJSON_Delete(publicRoot);
+    if (privateRoot) cJSON_Delete(privateRoot);
+}
+
+int main() {
+    executeTests();
+    return 0;
+}
