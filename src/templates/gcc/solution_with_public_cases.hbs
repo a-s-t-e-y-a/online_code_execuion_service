@@ -4,6 +4,7 @@
 #include <math.h>
 #include "cJSON.h"
 
+// USER CODE IS SUBSTITUTED HERE
 {{{user_code}}}
 
 // Public test cases JSON string
@@ -21,76 +22,123 @@ void executeTests() {
     int passed = 0;
     int failed = 0;
     int errors = 0;
+    int publicPassed = 0;
 
     // Execute test cases
+    cJSON* testsArray = cJSON_CreateArray();
     for (int i = 0; i < total; i++) {
         cJSON* testCase = cJSON_GetArrayItem(root, i);
-        if (!testCase) {
-            errors++;
-            continue;
+        if (!testCase) { 
+            errors++; 
+            cJSON* errorItem = cJSON_CreateObject();
+            cJSON_AddNumberToObject(errorItem, "index", i);
+            cJSON_AddBoolToObject(errorItem, "passed", false);
+            cJSON_AddStringToObject(errorItem, "error", "Invalid test case");
+            cJSON_AddItemToArray(testsArray, errorItem);
+            continue; 
         }
-        
+
         cJSON* inputObj = cJSON_GetObjectItem(testCase, "input");
         cJSON* expectedObj = cJSON_GetObjectItem(testCase, "output");
-        
-        if (!inputObj || !expectedObj) {
-            errors++;
-            continue;
+
+        if (!inputObj || !expectedObj) { 
+            errors++; 
+            cJSON* errorItem = cJSON_CreateObject();
+            cJSON_AddNumberToObject(errorItem, "index", i);
+            cJSON_AddBoolToObject(errorItem, "passed", false);
+            cJSON_AddStringToObject(errorItem, "error", "Missing input or output");
+            cJSON_AddItemToArray(testsArray, errorItem);
+            continue; 
         }
-        
-        // Extract first input parameter (most common case)
-        cJSON* firstInput = NULL;
-        cJSON* inputParam = NULL;
-        cJSON_ArrayForEach(inputParam, inputObj) {
-            firstInput = inputParam;
-            break;
-        }
-        
-        if (!firstInput) {
-            errors++;
-            continue;
-        }
-        
-        // Call function based on input type
-        int testPassed = 0;
-        if (cJSON_IsString(firstInput)) {
-            // String input
-            char* inputVal = firstInput->valuestring;
-            if (cJSON_IsString(expectedObj)) {
-                char* result = {{function_name}}(inputVal);
-                if (result && strcmp(result, expectedObj->valuestring) == 0) {
-                    testPassed = 1;
-                }
-            } else if (cJSON_IsNumber(expectedObj)) {
-                int result = {{function_name}}(inputVal);
-                if (result == expectedObj->valueint) {
-                    testPassed = 1;
-                }
-            }
-        } else if (cJSON_IsNumber(firstInput)) {
-            // Numeric input
-            int inputVal = firstInput->valueint;
-            if (cJSON_IsNumber(expectedObj)) {
-                int result = {{function_name}}(inputVal);
-                if (result == expectedObj->valueint) {
-                    testPassed = 1;
-                }
-            } else if (cJSON_IsString(expectedObj)) {
-                char* result = {{function_name}}(inputVal);
-                if (result && strcmp(result, expectedObj->valuestring) == 0) {
-                    testPassed = 1;
-                }
-            }
-        }
-        
+
+        // Extract parameters
+        {{#each parameters}}
+        {{#if (eq type "int")}}
+        cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+        if (!param_{{@index}}) { errors++; continue; }
+        int {{name}} = param_{{@index}}->valueint;
+        {{else if (or (eq type "std::string") (eq type "char*") (eq type "string"))}}
+        cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+        if (!param_{{@index}}) { errors++; continue; }
+        char* {{name}} = param_{{@index}}->valuestring;
+        {{else if (eq type "double")}}
+        cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+        if (!param_{{@index}}) { errors++; continue; }
+        double {{name}} = param_{{@index}}->valuedouble;
+        {{else if (eq type "float")}}
+        cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+        if (!param_{{@index}}) { errors++; continue; }
+        float {{name}} = (float)param_{{@index}}->valuedouble;
+        {{else if (eq type "bool")}}
+        cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+        if (!param_{{@index}}) { errors++; continue; }
+        int {{name}} = cJSON_IsTrue(param_{{@index}});
+        {{/if}}
+        {{/each}}
+
+        // Call function
+        cJSON* testItem = cJSON_CreateObject();
+        cJSON_AddNumberToObject(testItem, "index", i);
+        cJSON_AddItemToObject(testItem, "input", cJSON_Duplicate(inputObj, 1));
+        cJSON_AddItemToObject(testItem, "expected", cJSON_Duplicate(expectedObj, 1));
+        {{#if (eq return_type "int")}}
+        int result = {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+        int expected = expectedObj->valueint;
+        int testPassed = (result == expected);
+        cJSON_AddNumberToObject(testItem, "actual", result);
+        {{else if (or (eq return_type "std::string") (eq return_type "char*") (eq return_type "string"))}}
+        char* result = {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+        char* expected = expectedObj->valuestring;
+        int testPassed = (result && expected && strcmp(result, expected) == 0);
+        cJSON_AddStringToObject(testItem, "actual", result ? result : "");
+        {{else if (eq return_type "double")}}
+        double result = {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+        double expected = expectedObj->valuedouble;
+        int testPassed = (fabs(result - expected) < 1e-9);
+        cJSON_AddNumberToObject(testItem, "actual", result);
+        {{else if (eq return_type "float")}}
+        float result = {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+        float expected = (float)expectedObj->valuedouble;
+        int testPassed = (fabsf(result - expected) < 1e-6);
+        cJSON_AddNumberToObject(testItem, "actual", result);
+        {{else if (eq return_type "bool")}}
+        int result = {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+        int expected = cJSON_IsTrue(expectedObj);
+        int testPassed = (result == expected);
+        cJSON_AddBoolToObject(testItem, "actual", result);
+        {{/if}}
+        cJSON_AddBoolToObject(testItem, "passed", testPassed);
+        cJSON_AddItemToArray(testsArray, testItem);
+
         if (testPassed) {
             passed++;
+            publicPassed++;
         } else {
             failed++;
         }
     }
 
-    printf("{\"total\": %d, \"passed\": %d, \"failed\": %d, \"errors\": %d}\n", total, passed, failed, errors);
+    // Calculate score
+    int score = total > 0 ? (passed * 100) / total : 0;
+
+    // Output results
+    cJSON* output = cJSON_CreateObject();
+    cJSON_AddNumberToObject(output, "total", total);
+    cJSON_AddNumberToObject(output, "passed", passed);
+    cJSON_AddNumberToObject(output, "failed", failed);
+    cJSON_AddNumberToObject(output, "errors", errors);
+    cJSON_AddNumberToObject(output, "score", score);
+    cJSON* publicTests = cJSON_CreateObject();
+    cJSON_AddNumberToObject(publicTests, "total", total);
+    cJSON_AddNumberToObject(publicTests, "passed", publicPassed);
+    cJSON_AddItemToObject(output, "publicTests", publicTests);
+    cJSON_AddItemToObject(output, "tests", testsArray);
+
+    char* jsonString = cJSON_PrintUnformatted(output);
+    printf("%s\n", jsonString);
+    free(jsonString);
+    cJSON_Delete(output);
+
     cJSON_Delete(root);
 }
 
