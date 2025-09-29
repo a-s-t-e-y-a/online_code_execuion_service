@@ -81,6 +81,11 @@ export class TemplateServerCumMiddlewareService {
     handlebars.registerHelper('jsonEscaped', function (context) {
       return JSON.stringify(context).replace(/"/g, '\\"');
     });
+
+    // Register equality helper
+    handlebars.registerHelper('eq', function (a, b) {
+      return a === b;
+    });
   }
 
   async findOne(id: number) {

@@ -1,99 +1,115 @@
 export const cppTypeMappings = {
   "int": {
-    "python": "int",
-    "javascript": "number",
-    "java": "int",
-    "c": "int"
+    "gcc": "int",
+    "cpp": "int",
+    "py": "int",
+    "js": "number",
+    "java": "int"
   },
   "long": {
-    "python": "int",
-    "javascript": "number",
-    "java": "long",
-    "c": "long"
+    "gcc": "long",
+    "cpp": "long",
+    "py": "int",
+    "js": "number",
+    "java": "long"
   },
   "long long": {
-    "python": "int",
-    "javascript": "bigint",
-    "java": "long",
-    "c": "long long"
+    "gcc": "long long",
+    "cpp": "long long",
+    "py": "int",
+    "js": "bigint",
+    "java": "long"
   },
   "unsigned int": {
-    "python": "int",
-    "javascript": "number",
+    "gcc": "unsigned int",
+    "cpp": "unsigned int",
+    "py": "int",
+    "js": "number",
     "java": "int", // Java doesn't have unsigned primitives
-    "c": "unsigned int"
   },
   "float": {
-    "python": "float",
-    "javascript": "number",
-    "java": "float",
-    "c": "float"
+    "gcc": "float",
+    "cpp": "float",
+    "py": "float",
+    "js": "number",
+    "java": "float"
   },
   "double": {
-    "python": "float",
-    "javascript": "number",
-    "java": "double",
-    "c": "double"
+    "gcc": "double",
+    "cpp": "double",
+    "py": "float",
+    "js": "number",
+    "java": "double"
   },
   "long double": {
-    "python": "float",
-    "javascript": "number",
+    "gcc": "long double",
+    "cpp": "long double",
+    "py": "float",
+    "js": "number",
     "java": "double", 
-    "c": "long double"
   },
   "char": {
-    "python": "str",
-    "javascript": "string",
-    "java": "char",
-    "c": "char"
+    "gcc": "char",
+    "cpp": "char",
+    "py": "str",
+    "js": "string",
+    "java": "char"
   },
   "bool": {
-    "python": "bool",
-    "javascript": "boolean",
-    "java": "boolean",
-    "c": "bool" 
+    "gcc": "bool",
+    "cpp": "bool",
+    "py": "bool",
+    "js": "boolean",
+    "java": "boolean"
   },
   "std::string": {
-    "python": "str",
-    "javascript": "string",
-    "java": "String",
-    "c": "char*"
+    "gcc": "char*",
+    "cpp": "std::string",
+    "py": "str",
+    "js": "string",
+    "java": "String"
   },
   "std::vector<int>": {
-    "python": "list[int]",
-    "javascript": "number[]",
+    "gcc": "int*",
+    "cpp": "std::vector<int>",
+    "py": "list[int]",
+    "js": "number[]",
     "java": "List<Integer>", 
-    "c": "int*"
   },
   "std::vector<double>": {
-    "python": "list[float]",
-    "javascript": "number[]",
+    "gcc": "double*",
+    "cpp": "std::vector<double>",
+    "py": "list[float]",
+    "js": "number[]",
     "java": "List<Double>",
-    "c": "double*"
   },
   "std::vector<std::string>": {
-    "python": "list[str]",
-    "javascript": "string[]",
+    "gcc": "char**",
+    "cpp": "std::vector<std::string>",
+    "py": "list[str]",
+    "js": "string[]",
     "java": "List<String>",
-    "c": "char**"
   },
   "std::map<std::string,int>": {
-    "python": "dict[str, int]",
-    "javascript": "Record<string, number>", 
+    "gcc": "struct", 
+    "cpp": "std::map<std::string,int>",
+    "py": "dict[str, int]",
+    "js": "Record<string, number>", 
     "java": "Map<String, Integer>",
-    "c": "struct" 
   },
   "std::map<std::string,double>": {
-    "python": "dict[str, float]",
-    "javascript": "Record<string, number>",
+    "gcc": "struct",
+    "cpp": "std::map<std::string,double>",
+    "py": "dict[str, float]",
+    "js": "Record<string, number>",
     "java": "Map<String, Double>",
-    "c": "struct"
   },
   "std::pair<int,int>": {
-    "python": "tuple[int, int]",
-    "javascript": "[number, number]",
+    "gcc": "struct { int first; int second; }",
+    "cpp": "std::pair<int,int>",
+    "py": "tuple[int, int]",
+    "js": "[number, number]",
     "java": "Pair<Integer, Integer>", 
-    "c": "struct { int first; int second; }"
   }
 };
 

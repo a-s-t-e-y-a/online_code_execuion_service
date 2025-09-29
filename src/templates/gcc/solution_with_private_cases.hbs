@@ -8,12 +8,12 @@
 
 // Public test cases JSON string
 const char* publicTestCasesJson = "{{{jsonEscaped public_test_cases}}}";
-
 // Private test cases JSON string
 const char* privateTestCasesJson = "{{{jsonEscaped private_test_cases}}}";
 
 {{#each languageSpecificParameters}}
 {{#if (eq runtime "gcc")}}
+
 // Test execution function
 void executeTests() {
     cJSON* publicRoot = cJSON_Parse(publicTestCasesJson);
@@ -33,185 +33,84 @@ void executeTests() {
     int publicPassed = 0;
     int privatePassed = 0;
 
-    // Execute public test cases
-    if (publicRoot) {
-        for (int i = 0; i < publicTotal; i++) {
-            cJSON* testCase = cJSON_GetArrayItem(publicRoot, i);
-            if (!testCase) {
-                errors++;
-                continue;
-            }
+    // --- Start Test Loop Logic ---
+    cJSON* roots[2] = {publicRoot, privateRoot};
+    int totals[2] = {publicTotal, privateTotal};
+    int* passedCounters[2] = {&publicPassed, &privatePassed};
 
-            cJSON* inputObj = cJSON_GetObjectItem(testCase, "input");
-            cJSON* expectedObj = cJSON_GetObjectItem(testCase, "output");
+    for (int rootIndex = 0; rootIndex < 2; rootIndex++) {
+        cJSON* root = roots[rootIndex];
+        int currentTotal = totals[rootIndex];
+        int* currentPassed = passedCounters[rootIndex];
+        
+        if (root) {
+            for (int i = 0; i < currentTotal; i++) {
+                cJSON* testCase = cJSON_GetArrayItem(root, i);
+                if (!testCase) { errors++; continue; }
 
-            if (!inputObj || !expectedObj) {
-                errors++;
-                continue;
-            }
+                cJSON* inputObj = cJSON_GetObjectItem(testCase, "input");
+                cJSON* expectedObj = cJSON_GetObjectItem(testCase, "output");
 
-            // Extract parameters
-            {{#each parameters}}
-            {{#if (eq type "int")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            int {{name}} = param_{{@index}}->valueint;
-            {{else if (eq type "std::string")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            char* {{name}} = param_{{@index}}->valuestring;
-            {{else if (eq type "char*")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            char* {{name}} = param_{{@index}}->valuestring;
-            {{else if (eq type "string")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            char* {{name}} = param_{{@index}}->valuestring;
-            {{else if (eq type "double")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            double {{name}} = param_{{@index}}->valuedouble;
-            {{else if (eq type "float")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            float {{name}} = (float)param_{{@index}}->valuedouble;
-            {{else if (eq type "bool")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            int {{name}} = cJSON_IsTrue(param_{{@index}});
-            {{/if}}
-            {{/each}}
+                if (!inputObj || !expectedObj) { errors++; continue; }
 
-            // Call function
-            {{#if (eq return_type "int")}}
-            int result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            int expected = expectedObj->valueint;
-            int testPassed = (result == expected);
-            {{else if (eq return_type "std::string")}}
-            char* result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            char* expected = expectedObj->valuestring;
-            int testPassed = (result && expected && strcmp(result, expected) == 0);
-            {{else if (eq return_type "char*")}}
-            char* result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            char* expected = expectedObj->valuestring;
-            int testPassed = (result && expected && strcmp(result, expected) == 0);
-            {{else if (eq return_type "string")}}
-            char* result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            char* expected = expectedObj->valuestring;
-            int testPassed = (result && expected && strcmp(result, expected) == 0);
-            {{else if (eq return_type "double")}}
-            double result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            double expected = expectedObj->valuedouble;
-            int testPassed = (fabs(result - expected) < 1e-9);
-            {{else if (eq return_type "float")}}
-            float result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            float expected = (float)expectedObj->valuedouble;
-            int testPassed = (fabsf(result - expected) < 1e-6);
-            {{else if (eq return_type "bool")}}
-            int result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            int expected = cJSON_IsTrue(expectedObj);
-            int testPassed = (result == expected);
-            {{/if}}
+                // Extract parameters
+                {{#each parameters}}
+                {{#if (eq type "int")}}
+                cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+                if (!param_{{@index}}) { errors++; continue; }
+                int {{name}} = param_{{@index}}->valueint;
+                {{else if (or (eq type "std::string") (eq type "char*") (eq type "string"))}}
+                cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+                if (!param_{{@index}}) { errors++; continue; }
+                char* {{name}} = param_{{@index}}->valuestring;
+                {{else if (eq type "double")}}
+                cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+                if (!param_{{@index}}) { errors++; continue; }
+                double {{name}} = param_{{@index}}->valuedouble;
+                {{else if (eq type "float")}}
+                cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+                if (!param_{{@index}}) { errors++; continue; }
+                float {{name}} = (float)param_{{@index}}->valuedouble;
+                {{else if (eq type "bool")}}
+                cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
+                if (!param_{{@index}}) { errors++; continue; }
+                int {{name}} = cJSON_IsTrue(param_{{@index}});
+                {{/if}}
+                {{/each}}
 
-            if (testPassed) {
-                passed++;
-                publicPassed++;
-            } else {
-                failed++;
+                // Call function
+                {{#if (eq return_type "int")}}
+                int result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+                int expected = expectedObj->valueint;
+                int testPassed = (result == expected);
+                {{else if (or (eq return_type "std::string") (eq return_type "char*") (eq return_type "string"))}}
+                char* result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+                char* expected = expectedObj->valuestring;
+                int testPassed = (result && expected && strcmp(result, expected) == 0);
+                {{else if (eq return_type "double")}}
+                double result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+                double expected = expectedObj->valuedouble;
+                int testPassed = (fabs(result - expected) < 1e-9);
+                {{else if (eq return_type "float")}}
+                float result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+                float expected = (float)expectedObj->valuedouble;
+                int testPassed = (fabsf(result - expected) < 1e-6);
+                {{else if (eq return_type "bool")}}
+                int result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+                int expected = cJSON_IsTrue(expectedObj);
+                int testPassed = (result == expected);
+                {{/if}}
+
+                if (testPassed) {
+                    passed++;
+                    (*currentPassed)++;
+                } else {
+                    failed++;
+                }
             }
         }
     }
-
-    // Execute private test cases
-    if (privateRoot) {
-        for (int i = 0; i < privateTotal; i++) {
-            cJSON* testCase = cJSON_GetArrayItem(privateRoot, i);
-            if (!testCase) {
-                errors++;
-                continue;
-            }
-
-            cJSON* inputObj = cJSON_GetObjectItem(testCase, "input");
-            cJSON* expectedObj = cJSON_GetObjectItem(testCase, "output");
-
-            if (!inputObj || !expectedObj) {
-                errors++;
-                continue;
-            }
-
-            // Extract parameters
-            {{#each parameters}}
-            {{#if (eq type "int")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            int {{name}} = param_{{@index}}->valueint;
-            {{else if (eq type "std::string")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            char* {{name}} = param_{{@index}}->valuestring;
-            {{else if (eq type "char*")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            char* {{name}} = param_{{@index}}->valuestring;
-            {{else if (eq type "string")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            char* {{name}} = param_{{@index}}->valuestring;
-            {{else if (eq type "double")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            double {{name}} = param_{{@index}}->valuedouble;
-            {{else if (eq type "float")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            float {{name}} = (float)param_{{@index}}->valuedouble;
-            {{else if (eq type "bool")}}
-            cJSON* param_{{@index}} = cJSON_GetObjectItem(inputObj, "{{name}}");
-            if (!param_{{@index}}) { errors++; continue; }
-            int {{name}} = cJSON_IsTrue(param_{{@index}});
-            {{/if}}
-            {{/each}}
-
-            // Call function
-            {{#if (eq return_type "int")}}
-            int result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            int expected = expectedObj->valueint;
-            int testPassed = (result == expected);
-            {{else if (eq return_type "std::string")}}
-            char* result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            char* expected = expectedObj->valuestring;
-            int testPassed = (result && expected && strcmp(result, expected) == 0);
-            {{else if (eq return_type "char*")}}
-            char* result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            char* expected = expectedObj->valuestring;
-            int testPassed = (result && expected && strcmp(result, expected) == 0);
-            {{else if (eq return_type "string")}}
-            char* result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            char* expected = expectedObj->valuestring;
-            int testPassed = (result && expected && strcmp(result, expected) == 0);
-            {{else if (eq return_type "double")}}
-            double result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            double expected = expectedObj->valuedouble;
-            int testPassed = (fabs(result - expected) < 1e-9);
-            {{else if (eq return_type "float")}}
-            float result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            float expected = (float)expectedObj->valuedouble;
-            int testPassed = (fabsf(result - expected) < 1e-6);
-            {{else if (eq return_type "bool")}}
-            int result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
-            int expected = cJSON_IsTrue(expectedObj);
-            int testPassed = (result == expected);
-            {{/if}}
-
-            if (testPassed) {
-                passed++;
-                privatePassed++;
-            } else {
-                failed++;
-            }
-        }
-    }
+    // --- End Test Loop Logic ---
 
     // Calculate score
     int score = total > 0 ? (passed * 100) / total : 0;
@@ -223,10 +122,11 @@ void executeTests() {
     if (publicRoot) cJSON_Delete(publicRoot);
     if (privateRoot) cJSON_Delete(privateRoot);
 }
-{{/if}}
-{{/each}}
 
 int main() {
     executeTests();
     return 0;
 }
+
+{{/if}}
+{{/each}}
