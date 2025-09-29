@@ -4,6 +4,7 @@
 #include <math.h>
 #include "cJSON.h"
 
+// USER CODE IS SUBSTITUTED HERE
 {{{user_code}}}
 
 // Public test cases JSON string
@@ -79,6 +80,10 @@ void executeTests() {
                 {{/each}}
 
                 // Call function
+                // The parameters for your specific problem (Longest Substring) are: char* s
+                // The return type is: int
+                
+                // VVV Fix/Confirmation for Longest Substring VVV
                 {{#if (eq return_type "int")}}
                 int result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
                 int expected = expectedObj->valueint;
@@ -100,6 +105,7 @@ void executeTests() {
                 int expected = cJSON_IsTrue(expectedObj);
                 int testPassed = (result == expected);
                 {{/if}}
+                // ^^^ End Fix/Confirmation ^^^
 
                 if (testPassed) {
                     passed++;
