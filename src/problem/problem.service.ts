@@ -103,6 +103,7 @@ export class ProblemService {
     const problems = await this.db.query.problem_entity.findMany({
       with: {
         boilerPlateSnippets: true,
+        languageSpecificParameters:true,
       },
     });
     return problems;
