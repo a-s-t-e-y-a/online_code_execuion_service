@@ -86,6 +86,13 @@ export class TemplateServerCumMiddlewareService {
     handlebars.registerHelper('eq', function (a, b) {
       return a === b;
     });
+
+    // Register or helper
+    handlebars.registerHelper('or', function (...args) {
+      // Remove the last argument which is the options object
+      args.pop();
+      return args.some(arg => !!arg);
+    });
   }
 
   async findOne(id: number) {

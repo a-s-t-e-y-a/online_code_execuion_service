@@ -12,9 +12,6 @@ const char* publicTestCasesJson = "{{{jsonEscaped public_test_cases}}}";
 // Private test cases JSON string
 const char* privateTestCasesJson = "{{{jsonEscaped private_test_cases}}}";
 
-{{#each languageSpecificParameters}}
-{{#if (eq runtime "gcc")}}
-
 // Test execution function
 void executeTests() {
     cJSON* publicRoot = cJSON_Parse(publicTestCasesJson);
@@ -133,6 +130,3 @@ int main() {
     executeTests();
     return 0;
 }
-
-{{/if}}
-{{/each}}
