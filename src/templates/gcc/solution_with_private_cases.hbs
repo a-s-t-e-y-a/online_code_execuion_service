@@ -183,7 +183,7 @@ void executeTests() {
             char* expected = expectedObj->valuestring;
             int testPassed = (result && expected && strcmp(result, expected) == 0);
             {{else if (eq return_type "char*")}}
-            char* result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/e}}{{/each}});
+            char* result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
             char* expected = expectedObj->valuestring;
             int testPassed = (result && expected && strcmp(result, expected) == 0);
             {{else if (eq return_type "string")}}
