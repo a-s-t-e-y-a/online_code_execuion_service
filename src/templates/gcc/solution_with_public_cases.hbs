@@ -32,7 +32,7 @@ void executeTests() {
             errors++; 
             cJSON* errorItem = cJSON_CreateObject();
             cJSON_AddNumberToObject(errorItem, "index", i);
-            cJSON_AddBoolToObject(errorItem, "passed", false);
+            cJSON_AddBoolToObject(errorItem, "passed", 0);
             cJSON_AddStringToObject(errorItem, "error", "Invalid test case");
             cJSON_AddItemToArray(testsArray, errorItem);
             continue; 
@@ -45,7 +45,7 @@ void executeTests() {
             errors++; 
             cJSON* errorItem = cJSON_CreateObject();
             cJSON_AddNumberToObject(errorItem, "index", i);
-            cJSON_AddBoolToObject(errorItem, "passed", false);
+            cJSON_AddBoolToObject(errorItem, "passed", 0);
             cJSON_AddStringToObject(errorItem, "error", "Missing input or output");
             cJSON_AddItemToArray(testsArray, errorItem);
             continue; 
