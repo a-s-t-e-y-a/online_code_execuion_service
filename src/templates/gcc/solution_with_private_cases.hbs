@@ -82,23 +82,23 @@ void executeTests() {
                 
                 // VVV Fix/Confirmation for Longest Substring VVV
                 {{#if (eq return_type "int")}}
-                int result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+                int result = {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
                 int expected = expectedObj->valueint;
                 int testPassed = (result == expected);
                 {{else if (or (eq return_type "std::string") (eq return_type "char*") (eq return_type "string"))}}
-                char* result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+                char* result = {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
                 char* expected = expectedObj->valuestring;
                 int testPassed = (result && expected && strcmp(result, expected) == 0);
                 {{else if (eq return_type "double")}}
-                double result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+                double result = {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
                 double expected = expectedObj->valuedouble;
                 int testPassed = (fabs(result - expected) < 1e-9);
                 {{else if (eq return_type "float")}}
-                float result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+                float result = {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
                 float expected = (float)expectedObj->valuedouble;
                 int testPassed = (fabsf(result - expected) < 1e-6);
                 {{else if (eq return_type "bool")}}
-                int result = {{../function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
+                int result = {{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}});
                 int expected = cJSON_IsTrue(expectedObj);
                 int testPassed = (result == expected);
                 {{/if}}
