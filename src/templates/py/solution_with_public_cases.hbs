@@ -15,20 +15,35 @@ def execute_tests():
         errors = 0
         details = []
         
+        # Assuming the solution class is named 'Solution'
+        solution = Solution()
+        
         for i, test_case in enumerate(test_cases, 1):
             detail = {
                 "index": i,
-                "status": "failed"
+                "input": test_case["input"],
+                "expected": test_case["output"]
             }
             
             try:
-                # Extract inputs
-                inputs = list(test_case["input"].values())
-                # Call function - placeholder
-                # result = {{function_name}}(*inputs)
-                # Compare with test_case["output"]
+                # Extract inputs in parameter order
+                {{#each parameters}}
+                {{name}} = test_case["input"]["{{name}}"]
+                {{/each}}
+                # Call function
+                result = solution.{{function_name}}({{#each parameters}}{{name}}{{#unless @last}}, {{/unless}}{{/each}})
+                detail["actual"] = result
                 
-                detail["status"] = "not_implemented"
+                # Compare result with expected
+                passed_test = result == detail["expected"]
+                
+                if passed_test:
+                    detail["status"] = "passed"
+                    passed += 1
+                else:
+                    detail["status"] = "failed"
+                    failed += 1
+                    
                 details.append(detail)
             except Exception as e:
                 detail["status"] = "error"

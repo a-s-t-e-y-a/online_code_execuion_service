@@ -12,6 +12,9 @@ private_test_cases = {{{json private_test_cases}}}
 all_test_cases = public_test_cases + private_test_cases
 
 def execute_tests():
+    # Assuming the solution class is named 'Solution'
+    solution = Solution()
+    
     results = {
         "total": len(all_test_cases),
         "passed": 0,
@@ -26,7 +29,7 @@ def execute_tests():
             expected = test_case["output"]
             
             # Call user's function
-            result = {{function_name}}(*input_values)
+            result = solution.{{function_name}}(*input_values)
             
             # Use Python's built-in assertion
             assert result == expected, f"Expected {expected}, got {result}"
