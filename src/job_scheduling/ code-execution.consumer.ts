@@ -65,16 +65,25 @@ export class CodeExecutionConsumer extends WorkerHost {
       let testResults = [];
       try {
         const output = stdout.trim();
-        if (output.startsWith('{') || output.startsWith('[')) { 
+        if (output.startsWith('{') || output.startsWith('[')) {
           const parsed = JSON.parse(output);
           testResults = parsed.details || parsed || [];
         }
-      } catch (parseError) {
-      }
+      } catch (parseError) {}
 
       const hasErrors = stderr && stderr.trim().length > 0;
+      const hasOutputErrors =
+        stdout &&
+        (stdout.includes('SyntaxError') ||
+          stdout.includes('ReferenceError') ||
+          stdout.includes('TypeError') ||
+          stdout.includes('Error:') ||
+          stdout.includes('STDERR') ||
+          stdout.includes('Exit Code: 1'));
+
       const success =
         !hasErrors &&
+        !hasOutputErrors &&
         (testResults.length > 0
           ? testResults.every((test: any) => test.passed)
           : true);
@@ -99,7 +108,7 @@ export class CodeExecutionConsumer extends WorkerHost {
       };
 
       if (job.data.type === 'full') {
-        log("firing db write call")
+        log('firing db write call');
         await this.db.transaction(async (tx) => {
           await tx.insert(userSubmittedSolution).values({
             user_id: userId,
@@ -128,33 +137,36 @@ export class CodeExecutionConsumer extends WorkerHost {
             throw new BadRequestException('Problem not found');
           const diff = problem[0].difficulty;
 
-          const updateData = {
-            easy_solved:
-              diff === 'easy'
-                ? sql`${user_stats.easy_solved} + 1`
-                : user_stats.easy_solved,
-            medium_solved:
-              diff === 'medium'
-                ? sql`${user_stats.medium_solved} + 1`
-                : user_stats.medium_solved,
-            hard_solved:
-              diff === 'hard'
-                ? sql`${user_stats.hard_solved} + 1`
-                : user_stats.hard_solved,
-          };
+          // Only update user stats if the submission was successful
+          if (success) {
+            const updateData = {
+              easy_solved:
+                diff === 'easy'
+                  ? sql`${user_stats.easy_solved} + 1`
+                  : user_stats.easy_solved,
+              medium_solved:
+                diff === 'medium'
+                  ? sql`${user_stats.medium_solved} + 1`
+                  : user_stats.medium_solved,
+              hard_solved:
+                diff === 'hard'
+                  ? sql`${user_stats.hard_solved} + 1`
+                  : user_stats.hard_solved,
+            };
 
-          await tx
-            .insert(user_stats)
-            .values({
-              user_id: userId,
-              easy_solved: diff === 'easy' ? 1 : 0,
-              medium_solved: diff === 'medium' ? 1 : 0,
-              hard_solved: diff === 'hard' ? 1 : 0,
-            })
-            .onConflictDoUpdate({
-              target: user_stats.user_id,
-              set: updateData,
-            });
+            await tx
+              .insert(user_stats)
+              .values({
+                user_id: userId,
+                easy_solved: diff === 'easy' ? 1 : 0,
+                medium_solved: diff === 'medium' ? 1 : 0,
+                hard_solved: diff === 'hard' ? 1 : 0,
+              })
+              .onConflictDoUpdate({
+                target: user_stats.user_id,
+                set: updateData,
+              });
+          }
         });
       }
 
