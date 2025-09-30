@@ -120,34 +120,42 @@ export class ProblemService {
   }
 
   async findOne(id: number) {
-    const problemId = `problem_${id}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const data_from_cache = await this.cacheManager.get(`problem_${id}`);
 
-    try {
-      const data_from_cache = await this.cacheManager.get(`problem_${id}`);
-
-      if (data_from_cache) {
-        const result = JSON.parse(data_from_cache as string);
-
-        return result;
-      }
-
-      const problem = await this.db.query.problem_entity.findFirst({
-        where: eq(problem_entity.id, id),
-        with: {
-          boilerPlateSnippets: true,
-        },
-      });
-
-      if (!problem) {
-        throw new BadRequestException(`No problem with this id found`);
-      }
-
-      await this.cacheManager.set(`problem_${id}`, JSON.stringify(problem));
-
-      return problem;
-    } catch (error) {
-      throw error;
+    if (data_from_cache) {
+      const result = JSON.parse(data_from_cache as string);
+      return result;
     }
+
+    const problem = await this.db.query.problem_entity.findFirst({
+      where: eq(problem_entity.id, id),
+      with: {
+        boilerPlateSnippets: true,
+      },
+    });
+
+    if (!problem) {
+      throw new BadRequestException(`No problem with this id found`);
+    }
+
+    const acceptanceRate =
+      problem.submission_count > 0
+        ? Math.round(
+            (problem.accepted_count / problem.submission_count) * 100 * 100,
+          ) / 100
+        : 0;
+
+    const problemWithAcceptanceRate = {
+      ...problem,
+      acceptance_rate: acceptanceRate,
+    };
+
+    await this.cacheManager.set(
+      `problem_${id}`,
+      JSON.stringify(problemWithAcceptanceRate),
+    );
+
+    return problemWithAcceptanceRate;
   }
 
   async getBoilerplateCode(problemId: number, runtime: string) {
