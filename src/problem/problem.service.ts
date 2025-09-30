@@ -62,6 +62,7 @@ export class ProblemService {
     const { createProblemDto, uploads } = params;
 
     const problemData = {
+      user_id: createProblemDto.user_id,
       title: createProblemDto.title,
       description: createProblemDto.description,
       difficulty: createProblemDto.difficulty,
@@ -69,6 +70,15 @@ export class ProblemService {
       parameters_number: Number(createProblemDto.parameters.length),
       public_test_cases: uploads?.public_test_cases?.[0]?.url || '',
       private_test_cases: uploads?.private_test_cases?.[0]?.url || '',
+      topics: createProblemDto.topics || [],
+      company_tags: createProblemDto.company_tags || [],
+      hints: createProblemDto.hints || [],
+      slug: createProblemDto.slug || '',
+      constraints: createProblemDto.constraints || [],
+      example_solutions: (createProblemDto.example_solutions || []) as {
+        runtime: string;
+        code_snippet: string;
+      }[],
     };
     const result = await this.db
       .insert(problem_entity)
@@ -103,7 +113,7 @@ export class ProblemService {
     const problems = await this.db.query.problem_entity.findMany({
       with: {
         boilerPlateSnippets: true,
-        languageSpecificParameters:true,
+        languageSpecificParameters: true,
       },
     });
     return problems;

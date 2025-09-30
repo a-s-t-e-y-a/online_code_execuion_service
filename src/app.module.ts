@@ -16,6 +16,7 @@ import { CommonUseServiceService } from './common.use.service/common.use.service
 import { FileManagerModule } from './file_manager/file_manager.module';
 import { join } from 'path';
 import { LanguageModule } from './language/language.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 import fs from 'fs';
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import fs from 'fs';
     SolutionExecutionModule,
     FileManagerModule,
     LanguageModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService, CommonUseServiceService],

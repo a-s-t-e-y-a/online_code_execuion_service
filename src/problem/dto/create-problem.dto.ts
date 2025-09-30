@@ -9,7 +9,7 @@ import {
   IsNumber,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import { cppTypeEnum } from '../../config/cpp_type_mappings';
+import { cppTypeMappings } from '../../config/cpp_type_mappings';
 
 class ParameterDto {
   @IsString()
@@ -18,8 +18,27 @@ class ParameterDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn(Object.keys(cppTypeEnum))
+  @IsIn(Object.keys(cppTypeMappings))
   type: string;
+}
+
+class ExampleSolutionDto {
+  @ApiProperty({
+    description: 'Runtime for the example solution',
+    example: 'cpp',
+  })
+  @IsString()
+  @IsNotEmpty()
+  runtime: string;
+
+  @ApiProperty({
+    description: 'Code snippet for the example solution',
+    example:
+      'std::vector<int> twoSum(std::vector<int>& nums, int target) { ... }',
+  })
+  @IsString()
+  @IsNotEmpty()
+  code_snippet: string;
 }
 
 export class CreateProblemDto {
@@ -30,6 +49,14 @@ export class CreateProblemDto {
   @IsString()
   @IsNotEmpty()
   title: string;
+
+  @ApiProperty({
+    description: 'The user ID of the problem creator',
+    example: 1,
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  user_id: number;
 
   @ApiProperty({
     description: 'The description of the problem',
@@ -61,8 +88,8 @@ export class CreateProblemDto {
   @ApiProperty({
     description: 'Array of function parameters with name and type',
     example: [
-      { name: 'nums', type: 'number[]' },
-      { name: 'target', type: 'number' },
+      { name: 'nums', type: 'std::vector<int>' },
+      { name: 'target', type: 'int' },
     ],
     type: [Object],
   })
@@ -122,4 +149,59 @@ export class CreateProblemDto {
   @IsNumber()
   @IsNotEmpty()
   parameters_number: number;
+
+  @ApiProperty({
+    description: 'Topics related to the problem',
+    example: ['array', 'hash-table'],
+    required: false,
+  })
+  @IsArray()
+  @IsString({ each: true })
+  topics?: string[];
+
+  @ApiProperty({
+    description: 'Company tags for the problem',
+    example: ['google', 'amazon'],
+    required: false,
+  })
+  @IsArray()
+  @IsString({ each: true })
+  company_tags?: string[];
+
+  @ApiProperty({
+    description: 'Hints for the problem',
+    example: ['Use a hash map to store indices'],
+    required: false,
+  })
+  @IsArray()
+  @IsString({ each: true })
+  hints?: string[];
+
+  @ApiProperty({
+    description: 'Constraints for the problem',
+    example: ['1 <= nums.length <= 10^5'],
+    required: false,
+  })
+  @IsArray()
+  @IsString({ each: true })
+  constraints?: string[];
+
+  @ApiProperty({
+    description: 'Example solutions for the problem',
+    type: [ExampleSolutionDto],
+    required: false,
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ExampleSolutionDto)
+  example_solutions?: ExampleSolutionDto[];
+
+  @ApiProperty({
+    description: 'Slug for the problem URL',
+    example: 'two-sum',
+    required: false,
+  })
+  @IsString()
+  slug?: string;
 }
