@@ -97,7 +97,7 @@ export class CodeExecutionConsumer extends WorkerHost {
         cpuTime: executionTime,
         exitCode: hasErrors ? 1 : 0,
         signal: null,
-        status: hasErrors ? 'error' : 'success',
+        status: success ? 'success' : 'error',
         testResults: testResults,
         language: pistonLanguage,
         version,
