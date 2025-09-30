@@ -3,6 +3,6 @@ import { DrizzleAsyncProvider, drizzleProvider } from './drizzle.provider';
 
 @Module({
   providers: [...drizzleProvider],
-  exports: [DrizzleAsyncProvider],
+  exports: ['DATABASE'],
 })
 export class DrizzleModule {}

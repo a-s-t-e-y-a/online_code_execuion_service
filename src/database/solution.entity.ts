@@ -2,6 +2,7 @@ import { integer, pgTable, text, boolean, index } from 'drizzle-orm/pg-core';
 import { common_entity } from './common.entity';
 import { problem_entity } from './problem.entity';
 import { relations } from 'drizzle-orm/relations';
+import { jsonb } from 'drizzle-orm/pg-core';
 
 export const userSubmittedSolution = pgTable(
   'user_submitted_solutions',
@@ -12,7 +13,7 @@ export const userSubmittedSolution = pgTable(
       .notNull()
       .references(() => problem_entity.id),
     code_submitted: text('code_submitted').notNull(),
-    output_info: text('output_info').notNull(),
+    output_info: jsonb('output_info').notNull(),
     status: boolean('status').notNull().default(false),
     runtime: text('runtime').notNull(),
     ip_through_which_submission_made: text(

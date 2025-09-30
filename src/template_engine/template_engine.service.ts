@@ -331,7 +331,7 @@ export class TemplateServerCumMiddlewareService {
       class_name: className,
     };
     const generatedCode = template(templateData);
-    console.log(btoa(generatedCode));
+    // console.log(btoa(generatedCode));
     const extension = mapping.extension;
     // Use extracted class name for filename to match the actual class name
     const filename = runtime === 'java' ? `${className}.${extension}` : `${problem_id}_${function_name}_solution.${extension}`;

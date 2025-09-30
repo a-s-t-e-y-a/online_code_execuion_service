@@ -4,7 +4,7 @@ import * as schema from '../schema';
 import { ConfigService } from '@nestjs/config';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 
-export const DrizzleAsyncProvider = 'DrizzleAsyncProvider';
+export const DrizzleAsyncProvider = 'DATABASE';
 
 export const drizzleProvider = [
   {

@@ -1,11 +1,21 @@
 import { Processor, WorkerHost, OnWorkerEvent } from '@nestjs/bullmq';
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  Inject,
+  BadRequestException,
+} from '@nestjs/common';
 import { Job } from 'bullmq';
-import * as fs from 'fs';
-import * as path from 'path';
 import { promisify } from 'util';
 import { exec } from 'child_process';
 import mapLanguageToPiston from '../config/piston.runtime.map';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import * as schema from '../schema';
+import { userSubmittedSolution } from '../database/solution.entity';
+import { problem_entity } from '../database/problem.entity';
+import { user_stats } from '../database/user_stats';
+import { eq, sql } from 'drizzle-orm';
+import { log } from 'console';
 
 const execAsync = promisify(exec);
 
@@ -16,9 +26,11 @@ const execAsync = promisify(exec);
 export class CodeExecutionConsumer extends WorkerHost {
   private readonly logger = new Logger(CodeExecutionConsumer.name);
 
-  async process(job: Job<any, any, string>): Promise<any> {
-    this.logger.log(`Processing job ${job.id} of type ${job.name}`);
+  constructor(@Inject('DATABASE') private db: NodePgDatabase<typeof schema>) {
+    super();
+  }
 
+  async process(job: Job<any, any, string>): Promise<any> {
     switch (job.name) {
       case 'execute-code':
         return this.executeCode(job);
@@ -42,30 +54,22 @@ export class CodeExecutionConsumer extends WorkerHost {
           ? process.env.PISTON_CLI_PATH_DEV
           : process.env.PISTON_CLI_PATH || '/path/to/piston/cli/index.js';
       const cliCommand = `${pistonCliPath} run ${pistonLanguage} "${pathToFile}" -l ${version}`;
-      this.logger.log(`Executing CLI command: ${cliCommand}`);
+
       const startTime = Date.now();
       const { stdout, stderr } = await execAsync(cliCommand, {
         timeout: 30000,
         maxBuffer: 1024 * 1024 * 10,
       });
       const executionTime = Date.now() - startTime;
-      this.logger.log('CLI execution completed', {
-        executionTime,
-        hasStdout: !!stdout,
-        hasStderr: !!stderr,
-      });
+
       let testResults = [];
       try {
         const output = stdout.trim();
-        if (output.startsWith('{') || output.startsWith('[')) {
+        if (output.startsWith('{') || output.startsWith('[')) { 
           const parsed = JSON.parse(output);
           testResults = parsed.details || parsed || [];
         }
       } catch (parseError) {
-        this.logger.warn(
-          'Could not parse test results from stdout:',
-          parseError,
-        );
       }
 
       const hasErrors = stderr && stderr.trim().length > 0;
@@ -94,16 +98,76 @@ export class CodeExecutionConsumer extends WorkerHost {
         executionMethod: 'cli',
       };
 
+      if (job.data.type === 'full') {
+        log("firing db write call")
+        await this.db.transaction(async (tx) => {
+          await tx.insert(userSubmittedSolution).values({
+            user_id: userId,
+            problem_id: problemId,
+            code_submitted: job.data.code,
+            output_info: result,
+            status: success,
+            runtime: runtime,
+            ip_through_which_submission_made: 'job_execution',
+          });
+
+          await tx
+            .update(problem_entity)
+            .set({
+              submission_count: sql`${problem_entity.submission_count} + 1`,
+              accepted_count: sql`${problem_entity.accepted_count} + ${success ? 1 : 0}`,
+            })
+            .where(eq(problem_entity.id, problemId));
+
+          const problem = await tx
+            .select({ difficulty: problem_entity.difficulty })
+            .from(problem_entity)
+            .where(eq(problem_entity.id, problemId))
+            .limit(1);
+          if (problem.length === 0)
+            throw new BadRequestException('Problem not found');
+          const diff = problem[0].difficulty;
+
+          const updateData = {
+            easy_solved:
+              diff === 'easy'
+                ? sql`${user_stats.easy_solved} + 1`
+                : user_stats.easy_solved,
+            medium_solved:
+              diff === 'medium'
+                ? sql`${user_stats.medium_solved} + 1`
+                : user_stats.medium_solved,
+            hard_solved:
+              diff === 'hard'
+                ? sql`${user_stats.hard_solved} + 1`
+                : user_stats.hard_solved,
+          };
+
+          await tx
+            .insert(user_stats)
+            .values({
+              user_id: userId,
+              easy_solved: diff === 'easy' ? 1 : 0,
+              medium_solved: diff === 'medium' ? 1 : 0,
+              hard_solved: diff === 'hard' ? 1 : 0,
+            })
+            .onConflictDoUpdate({
+              target: user_stats.user_id,
+              set: updateData,
+            });
+        });
+      }
+
       return result;
     } catch (error) {
       this.logger.error(`Job ${job.id} failed:`, error);
       if (error.code === 'ETIMEDOUT') {
-        throw new Error('Code execution timed out');
+        throw new BadRequestException('Code execution timed out');
       } else if (error.code === 'ENOTFOUND' || error.code === 'ENOENT') {
-        throw new Error('Piston CLI not found or not accessible');
+        throw new BadRequestException('Piston CLI not found or not accessible');
       }
 
-      throw error;
+      // throw error;
     }
   }
 
@@ -114,20 +178,7 @@ export class CodeExecutionConsumer extends WorkerHost {
 
   @OnWorkerEvent('completed')
   onCompleted(job: Job, result: any) {
-    this.logger.log(`Job ${job.id} completed with result:`, {
-      success: result.success,
-      exitCode: result.exitCode,
-      testsPassed: result.testResults?.filter((t: any) => t.passed).length || 0,
-      testsTotal: result.testResults?.length || 0,
-      score:
-        result.testResults?.reduce(
-          (acc: number, t: any) => acc + (t.score || 0),
-          0,
-        ) || 0,
-      language: result.originalLanguage,
-      pistonLanguage: result.language,
-      version: result.version,
-    });
+    this.logger.log(`Job ${job.id} completed with success`);
   }
 
   @OnWorkerEvent('failed')

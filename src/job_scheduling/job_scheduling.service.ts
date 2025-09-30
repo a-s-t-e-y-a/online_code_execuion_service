@@ -10,6 +10,7 @@ interface CodeExecutionJobData {
   testCases?: any[];
   problemId?: number;
   userId?: string;
+  type?: string;
 }
 
 @Injectable()

@@ -1,26 +1,29 @@
-import { Injectable } from '@nestjs/common';
-import { CreateDashboardDto } from './dto/create-dashboard.dto';
-import { UpdateDashboardDto } from './dto/update-dashboard.dto';
+import { Injectable, Inject } from '@nestjs/common';
+import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { eq } from 'drizzle-orm';
+import { user_stats } from '../database/user_stats';
+import { Schema } from '../schema';
 
 @Injectable()
 export class DashboardService {
-  create(createDashboardDto: CreateDashboardDto) {
-    return 'This action adds a new dashboard';
-  }
+  constructor(@Inject('DATABASE') private db: NodePgDatabase<Schema>) {}
 
-  findAll() {
-    return `This action returns all dashboard`;
-  }
+  async findOne(id: number) {
+    const stats = await this.db
+      .select()
+      .from(user_stats)
+      .where(eq(user_stats.user_id, id))
+      .limit(1);
 
-  findOne(id: number) {
-    return `This action returns a #${id} dashboard`;
-  }
+    if (stats.length === 0) {
+      return {
+        user_id: id,
+        easy_solved: 0,
+        medium_solved: 0,
+        hard_solved: 0,
+      };
+    }
 
-  update(id: number, updateDashboardDto: UpdateDashboardDto) {
-    return `This action updates a #${id} dashboard`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} dashboard`;
+    return stats[0];
   }
 }

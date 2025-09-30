@@ -58,7 +58,7 @@ CREATE TABLE "user_submitted_solutions" (
 	"user_id" integer NOT NULL,
 	"problem_id" integer NOT NULL,
 	"code_submitted" text NOT NULL,
-	"output_info" text NOT NULL,
+	"output_info" jsonb NOT NULL,
 	"status" boolean DEFAULT false NOT NULL,
 	"runtime" text NOT NULL,
 	"ip_through_which_submission_made" text NOT NULL,
